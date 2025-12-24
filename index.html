@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Return of the Battleship</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: #000;
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      font-family: monospace;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #screen {
+      display: block;
+      /* Pixel-perfect rendering - wichtig für Pixel-Art */
+      image-rendering: pixelated;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: crisp-edges;
+      /* Verhindert unscharfe Skalierung */
+      image-rendering: -webkit-optimize-contrast;
+      /* Canvas wird via CSS skaliert, bleibt aber 320x200 intern */
+    }
+  </style>
+</head>
+<body>
+  <canvas id="screen"></canvas>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
+

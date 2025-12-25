@@ -1,12 +1,13 @@
 import { Entity, EntityType } from "./entities/entity";
 import { Player } from "./entities/player";
-import { updateEnemy } from "./entities/enemy";
+import { updateEnemy, cleanupEnemyAnimation } from "./entities/enemy";
 import { WeaponSystem } from "./weapons/weapon";
 import { SpawnDirector } from "./director";
 import { checkCollisions } from "./systems/collision";
 import { updateEntityMovement } from "./systems/movement";
 import { createPlayerBullet, createRailgunBeam } from "./systems/projectiles";
 import { createExplosionSprite } from "../assets/sprites";
+import { AnimatedSprite } from "../engine/render/animation";
 
 export enum GameState {
   TITLE,
@@ -37,8 +38,8 @@ export class Game {
   public laserTarget: Entity | null = null;
   private laserBeamTarget: { x: number; y: number } | null = null;
 
-  constructor() {
-    this.player = new Player();
+  constructor(playerSprite: AnimatedSprite) {
+    this.player = new Player(playerSprite);
     this.weapons = new WeaponSystem();
     this.director = new SpawnDirector();
     
@@ -49,10 +50,10 @@ export class Game {
     }
   }
 
-  start() {
+  start(playerSprite: AnimatedSprite) {
     this.state = GameState.RUNNING;
     this.score = 0;
-    this.player = new Player();
+    this.player = new Player(playerSprite);
     this.weapons = new WeaponSystem();
     this.director = new SpawnDirector();
     this.entities = [];
@@ -200,6 +201,8 @@ export class Game {
             e.type === EntityType.ENEMY_BOAT ||
             e.type === EntityType.ENEMY_FRIGATE ||
             e.type === EntityType.BULLET) {
+          // Bereinige Animation State vor dem Entfernen
+          cleanupEnemyAnimation(e.id);
           // Create explosion at entity position
           const exp: Entity = {
             id: 999999,
@@ -329,6 +332,8 @@ export class Game {
     // Remove dead entities
     this.entities = this.entities.filter(e => {
       if (e.hp !== undefined && e.hp <= 0 && e.type !== EntityType.PLAYER) {
+        // Bereinige Animation State vor dem Entfernen
+        cleanupEnemyAnimation(e.id);
         return false;
       }
       return true;

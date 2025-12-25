@@ -10,33 +10,27 @@ function createSprite(width: number, height: number, pattern: number[]): Sprite 
 }
 
 // Player battleship sprite (simple placeholder)
+// NOTE: This is a placeholder. Use loadSprite() to load a 64x32 pixel sprite from file.
 export function createPlayerSprite(): Sprite {
-  const w = 32;
-  const h = 24;
+  const w = 64;
+  const h = 32;
   const px = new Uint8Array(w * h);
   
-  // Simple battleship shape: gray/white body, red accents
+  // Simple battleship shape: gray body, red accents (scaled up for 64x32)
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const idx = y * w + x;
       
-      // Center body
-      if (x >= 8 && x < 24 && y >= 8 && y < 20) {
+      // Center body (scaled up from original 32x24 design)
+      if (x >= 16 && x < 48 && y >= 10 && y < 26) {
         px[idx] = 7; // Gray
       }
       // Cannon/turret
-      else if (x >= 10 && x < 22 && y >= 4 && y < 12) {
+      else if (x >= 20 && x < 44 && y >= 6 && y < 16) {
         px[idx] = 8; // Light gray
       }
-      // Outline
-      else if (
-        (x === 7 || x === 24 || y === 7 || y === 20) &&
-        x >= 6 && x <= 25 && y >= 6 && y <= 21
-      ) {
-        px[idx] = 9; // White outline
-      }
       // Red accent
-      else if (x >= 12 && x < 20 && y >= 10 && y < 14) {
+      else if (x >= 24 && x < 40 && y >= 14 && y < 20) {
         px[idx] = 12; // Red
       }
       // Transparent

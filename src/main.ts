@@ -4,6 +4,7 @@ import { InputManager } from "./engine/input";
 import { AudioEngine } from "./engine/audio";
 import { Game, GameState } from "./game/game";
 import { GameRenderer } from "./game/renderer";
+import { assets } from "./assets/assets";
 
 const canvas = document.getElementById("screen") as HTMLCanvasElement;
 if (!canvas) throw new Error("Canvas not found");
@@ -11,8 +12,25 @@ if (!canvas) throw new Error("Canvas not found");
 const renderer = new VGARenderer(canvas);
 const input = new InputManager();
 const audio = new AudioEngine();
-const game = new Game();
-const gameRenderer = new GameRenderer();
+
+// Load assets before creating game
+let game: Game;
+let gameRenderer: GameRenderer;
+
+async function init() {
+  // Lade alle Sprites
+  await assets.loadAll();
+  
+  // Erstelle Game mit geladenen Sprites
+  const playerSprite = assets.getPlayerSprite();
+  game = new Game(playerSprite);
+  gameRenderer = new GameRenderer();
+}
+
+// Warte bis Assets geladen sind, dann starte Game Loop
+init().then(() => {
+  loop.start();
+}).catch(console.error);
 
 // Resume audio on first interaction
 let audioStarted = false;
@@ -52,13 +70,18 @@ function getInput() {
 }
 
 // Game loop
+let lastDt = 16; // Default delta time
 const loop = new GameLoop(
   (dt) => {
+    lastDt = dt; // Speichere dt für Render
     // Handle state transitions
+    if (!game || !gameRenderer) return; // Warte bis Assets geladen sind
+    
     if (game.state === GameState.TITLE) {
       const inp = getInput();
       if (inp.fire) {
-        game.start();
+        const playerSprite = assets.getPlayerSprite();
+        game.start(playerSprite);
         audio.resume();
       }
     } else if (game.state === GameState.GAME_OVER) {
@@ -66,7 +89,7 @@ const loop = new GameLoop(
       if (inp.fire) {
         game.state = GameState.TITLE;
       }
-    } else if (game.state === GameState.RUNNING) {
+    } else if (game && game.state === GameState.RUNNING) {
       const inp = getInput();
       
       // Play SFX
@@ -88,6 +111,13 @@ const loop = new GameLoop(
   },
   () => {
     // Render
+    if (!game || !gameRenderer) {
+      // Zeige Loading-Screen während Assets geladen werden
+      renderer.clear(1);
+      renderer.present();
+      return;
+    }
+    
     const stateStr = game.state === GameState.TITLE ? "title" :
                      game.state === GameState.GAME_OVER ? "gameover" : "running";
     
@@ -103,12 +133,13 @@ const loop = new GameLoop(
       game.getScreenShake(),
       game.state === GameState.RUNNING ? game.getLaserTarget() : null,
       game.state === GameState.RUNNING ? game.getLaserBeamTarget() : null,
-      game.state === GameState.RUNNING ? game.getFlashTime() : 0
+      game.state === GameState.RUNNING ? game.getFlashTime() : 0,
+      lastDt // Delta time für Animation
     );
     
     renderer.present();
   }
 );
 
-loop.start();
+// Loop wird gestartet nach init() (siehe oben)
 

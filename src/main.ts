@@ -59,11 +59,12 @@ function getInput() {
   let moveRight = input.isKeyDown("KeyD") || input.isKeyDown("ArrowRight");
   
   // Mobile Joystick (wenn aktiv, überschreibt Desktop-Input)
+  // Y-Achse invertiert: nach oben ziehen = nach unten bewegen
   if (isMobile && mobileState.joystickActive) {
     const deadzone = 0.2;
     if (Math.abs(mobileState.joystickY) > deadzone) {
-      moveUp = mobileState.joystickY < -deadzone;
-      moveDown = mobileState.joystickY > deadzone;
+      moveUp = mobileState.joystickY > deadzone;  // Invertiert: positiver Wert = nach oben
+      moveDown = mobileState.joystickY < -deadzone;  // Invertiert: negativer Wert = nach unten
     }
     if (Math.abs(mobileState.joystickX) > deadzone) {
       moveLeft = mobileState.joystickX < -deadzone;

@@ -42,11 +42,11 @@ export class MobileControls {
     const joystickZone = document.getElementById('joystick-zone');
     if (!joystickZone) return;
 
-    // Static joystick, links unten
+    // Static joystick, links vertikal in der Mitte
     this.joystick = nipplejs.create({
       zone: joystickZone,
       mode: 'static',
-      position: { left: '20%', bottom: '10%' },
+      position: { left: '15%', top: '50%' },
       color: 'rgba(255, 255, 255, 0.5)',
       size: 120,
       threshold: 0.1,

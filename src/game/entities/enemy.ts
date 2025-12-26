@@ -3,6 +3,7 @@ import { createDroneSprite, createJetSprite, createBoatSprite, createFrigateSpri
 import { W, SEA_Y } from "../../engine/render/constants";
 import { AnimatedSprite, AnimationState, createAnimationState, updateAnimation } from "../../engine/render/animation";
 import { assets } from "../../assets/assets";
+import { Sprite } from "../../engine/render/blit";
 
 // Map für Animation States animierter Enemies
 const enemyAnimationStates = new Map<number, AnimationState>();

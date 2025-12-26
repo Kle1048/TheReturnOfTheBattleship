@@ -25,6 +25,7 @@ export class Game {
   private director: SpawnDirector;
   private entities: Entity[] = [];
   private explosions: Entity[] = [];
+  private smokeParticles: Entity[] = [];
   
   // Screen shake
   private screenShakeX = 0;
@@ -37,6 +38,7 @@ export class Game {
   // Laser target tracking
   public laserTarget: Entity | null = null;
   private laserBeamTarget: { x: number; y: number } | null = null;
+  private samTarget: Entity | null = null;
 
   constructor(playerSprite: AnimatedSprite) {
     this.player = new Player(playerSprite);
@@ -509,7 +511,7 @@ export class Game {
         smoke.lifetime -= dt;
       }
     }
-    this.smokeParticles = this.smokeParticles.filter(e => e.lifetime === undefined || e.lifetime > 0);
+    this.smokeParticles = this.smokeParticles.filter((e: Entity) => e.lifetime === undefined || e.lifetime > 0);
     
     // Check collisions
     const hits = checkCollisions(this.entities);

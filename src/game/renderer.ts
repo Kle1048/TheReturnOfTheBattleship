@@ -51,6 +51,7 @@ export class GameRenderer {
     screenShake: { x: number; y: number },
     laserTarget: Entity | null = null,
     laserBeamTarget: { x: number; y: number } | null = null,
+    samTarget: Entity | null = null,
     flashTime: number = 0,
     dt: number = 16 // Delta time für Animation
   ) {
@@ -122,6 +123,36 @@ export class GameRenderer {
       
       // Draw frame around target (white/yellow color)
       const frameColor = 11; // Yellow/white
+      const left = targetX - sprite.w / 2 - frameSize;
+      const right = targetX + sprite.w / 2 + frameSize;
+      const top = targetY - sprite.h / 2 - frameSize;
+      const bottom = targetY + sprite.h / 2 + frameSize;
+      
+      // Top and bottom lines
+      for (let x = left; x <= right; x++) {
+        if (x >= 0 && x < W) {
+          if (top >= 0 && top < H) fb[top * W + x] = frameColor;
+          if (bottom >= 0 && bottom < H) fb[bottom * W + x] = frameColor;
+        }
+      }
+      // Left and right lines
+      for (let y = top; y <= bottom; y++) {
+        if (y >= 0 && y < H) {
+          if (left >= 0 && left < W) fb[y * W + left] = frameColor;
+          if (right >= 0 && right < W) fb[y * W + right] = frameColor;
+        }
+      }
+    }
+    
+    // Draw SAM target indicator (red frame around locked air target)
+    if (samTarget && samTarget.hp !== undefined && samTarget.hp > 0) {
+      const targetX = Math.floor(samTarget.x + shakeX);
+      const targetY = Math.floor(samTarget.y + shakeY);
+      const sprite = samTarget.sprite;
+      const frameSize = 2; // Frame thickness
+      
+      // Draw frame around target (red color for SAM lock)
+      const frameColor = 12; // Red
       const left = targetX - sprite.w / 2 - frameSize;
       const right = targetX + sprite.w / 2 + frameSize;
       const top = targetY - sprite.h / 2 - frameSize;

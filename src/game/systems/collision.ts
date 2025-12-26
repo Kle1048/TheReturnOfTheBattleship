@@ -43,13 +43,24 @@ export function checkCollisions(entities: Entity[]): HitResult[] {
         }
       }
       
-      // Enemy vs Player bullets
+      // Enemy vs Player bullets/beams/missiles
       if ((e1.type === EntityType.ENEMY_DRONE || 
            e1.type === EntityType.ENEMY_JET ||
            e1.type === EntityType.ENEMY_BOAT ||
            e1.type === EntityType.ENEMY_FRIGATE) &&
-          (e2.type === EntityType.BULLET || e2.type === EntityType.RAILGUN_BEAM) &&
+          (e2.type === EntityType.BULLET || e2.type === EntityType.RAILGUN_BEAM ||
+           e2.type === EntityType.SAM_MISSILE || e2.type === EntityType.SSM_MISSILE) &&
           e2.owner !== undefined && e2.owner !== e1.id) {
+        // SAM missiles only hit air targets
+        if (e2.type === EntityType.SAM_MISSILE && 
+            e1.type !== EntityType.ENEMY_DRONE && e1.type !== EntityType.ENEMY_JET) {
+          continue;
+        }
+        // SSM missiles only hit ship targets
+        if (e2.type === EntityType.SSM_MISSILE && 
+            e1.type !== EntityType.ENEMY_BOAT && e1.type !== EntityType.ENEMY_FRIGATE) {
+          continue;
+        }
         if (checkCollision(e1, e2)) {
           hits.push({ hit: true, entity1: e1, entity2: e2 });
         }

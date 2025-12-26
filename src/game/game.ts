@@ -4,8 +4,8 @@ import { updateEnemy, cleanupEnemyAnimation } from "./entities/enemy";
 import { WeaponSystem } from "./weapons/weapon";
 import { SpawnDirector } from "./director";
 import { checkCollisions } from "./systems/collision";
-import { updateEntityMovement } from "./systems/movement";
-import { createPlayerBullet, createRailgunBeam } from "./systems/projectiles";
+import { updateEntityMovement, updateHomingMissile } from "./systems/movement";
+import { createPlayerBullet, createRailgunBeam, createSAMMissile, createSSMMissile, createSmokeParticle } from "./systems/projectiles";
 import { createExplosionSprite } from "../assets/sprites";
 import { AnimatedSprite } from "../engine/render/animation";
 
@@ -58,9 +58,11 @@ export class Game {
     this.director = new SpawnDirector();
     this.entities = [];
     this.explosions = [];
+    this.smokeParticles = [];
     this.entities.push(this.player.entity);
     this.laserTarget = null;
     this.laserBeamTarget = null;
+    this.samTarget = null;
   }
 
   private findLaserTarget(): Entity | null {
@@ -92,6 +94,75 @@ export class Game {
     return nearestEnemy;
   }
 
+  // Find nearest air target (DRONE or JET) for SAM
+  private findSAMTarget(): Entity | null {
+    const maxRange = 200; // Longer range for SAM
+    let nearestAirTarget: Entity | null = null;
+    let nearestDist = maxRange;
+    
+    for (const entity of this.entities) {
+      // Only air enemies
+      if (entity.type === EntityType.ENEMY_DRONE ||
+          entity.type === EntityType.ENEMY_JET) {
+        // Check if enemy is alive
+        if (entity.hp !== undefined && entity.hp > 0) {
+          // Calculate distance (only check X distance for range, Y doesn't matter much for air)
+          const dx = entity.x - this.player.entity.x;
+          const dist = Math.abs(dx);
+          
+          if (dist < nearestDist && entity.x > this.player.entity.x) {
+            nearestDist = dist;
+            nearestAirTarget = entity;
+          }
+        }
+      }
+    }
+    
+    return nearestAirTarget;
+  }
+
+  // Find nearest ship target (BOAT or FRIGATE) for SSM within a 30° cone
+  private findSSMTarget(fromX: number = this.player.entity.x, fromY: number = this.player.entity.y, directionAngle: number = 0): Entity | null {
+    const maxRange = 250; // Even longer range for SSM
+    const coneAngle = 30 * (Math.PI / 180); // 30 degrees in radians (15° on each side)
+    let nearestShipTarget: Entity | null = null;
+    let nearestDist = maxRange;
+    
+    for (const entity of this.entities) {
+      // Only ship enemies
+      if (entity.type === EntityType.ENEMY_BOAT ||
+          entity.type === EntityType.ENEMY_FRIGATE) {
+        // Check if enemy is alive
+        if (entity.hp !== undefined && entity.hp > 0) {
+          // Calculate distance and angle
+          const dx = entity.x - fromX;
+          const dy = entity.y - fromY;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          // Only consider targets that are to the right (ahead) of the missile
+          if (dist < nearestDist && entity.x > fromX) {
+            // Calculate angle to target
+            const angleToTarget = Math.atan2(dy, dx);
+            
+            // Calculate angle difference (normalize to -PI to PI)
+            let angleDiff = angleToTarget - directionAngle;
+            // Normalize angle difference to -PI to PI
+            while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+            while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+            
+            // Check if target is within the cone (15° on each side = 30° total)
+            if (Math.abs(angleDiff) <= coneAngle / 2) {
+              nearestDist = dist;
+              nearestShipTarget = entity;
+            }
+          }
+        }
+      }
+    }
+    
+    return nearestShipTarget;
+  }
+
   update(dt: number, input: {
     moveUp: boolean;
     moveDown: boolean;
@@ -100,6 +171,8 @@ export class Game {
     fire: boolean;
     railgun: boolean;
     laser: boolean;
+    sam: boolean;
+    ssm: boolean;
     promptStrike: boolean;
   }) {
     if (this.state !== GameState.RUNNING) return;
@@ -154,6 +227,18 @@ export class Game {
     // Find laser target (nearest enemy within 60 pixels)
     this.laserTarget = this.findLaserTarget();
     
+    // Find SAM target (air targets only, must lock before firing)
+    // Only update target if no SAM missiles are currently in flight
+    const samMissilesInFlight = this.entities.some(e => 
+      e.type === EntityType.SAM_MISSILE && 
+      e.hp !== undefined && e.hp > 0
+    );
+    
+    if (!samMissilesInFlight) {
+      this.samTarget = this.findSAMTarget();
+    }
+    // If SAM missiles are in flight, keep the current target locked
+    
     // Handle laser fire (once per key press)
     if (input.laser && this.weapons.canFireLaser() && this.laserTarget) {
       // Fire the laser
@@ -191,6 +276,34 @@ export class Game {
       this.laserBeamTarget = null;
     }
     
+    // Handle SAM fire (only if target is locked)
+    if (input.sam && this.weapons.canFireAA() && this.samTarget) {
+      const missile = createSAMMissile(
+        this.player.entity.x + this.player.entity.sprite.w / 2,
+        this.player.entity.y,
+        this.samTarget.id,
+        this.player.entity.id
+      );
+      this.entities.push(missile);
+      this.weapons.fireAA(this.player.entity.x, this.player.entity.y);
+    }
+    
+    // Handle SSM fire (auto-targets nearest ship within 30° cone to the right)
+    if (input.ssm && this.weapons.canFireSSM()) {
+      const playerX = this.player.entity.x + this.player.entity.sprite.w / 2;
+      const playerY = this.player.entity.y;
+      const directionAngle = 0; // Missile flies straight right (0 radians)
+      const ssmTarget = this.findSSMTarget(playerX, playerY, directionAngle);
+      const missile = createSSMMissile(
+        playerX,
+        playerY,
+        ssmTarget ? ssmTarget.id : null,
+        this.player.entity.id
+      );
+      this.entities.push(missile);
+      this.weapons.fireSSM(this.player.entity.x, this.player.entity.y);
+    }
+    
     if (input.promptStrike && this.weapons.canUsePromptStrike()) {
       this.weapons.usePromptStrike();
       // Clear all enemies and bullets on screen
@@ -200,7 +313,9 @@ export class Game {
             e.type === EntityType.ENEMY_JET ||
             e.type === EntityType.ENEMY_BOAT ||
             e.type === EntityType.ENEMY_FRIGATE ||
-            e.type === EntityType.BULLET) {
+            e.type === EntityType.BULLET ||
+            e.type === EntityType.SAM_MISSILE ||
+            e.type === EntityType.SSM_MISSILE) {
           // Bereinige Animation State vor dem Entfernen
           cleanupEnemyAnimation(e.id);
           // Create explosion at entity position
@@ -236,6 +351,98 @@ export class Game {
           entity.type === EntityType.ENEMY_BOAT ||
           entity.type === EntityType.ENEMY_FRIGATE) {
         updateEnemy(entity, dt);
+      } else if (entity.type === EntityType.SMOKE_PARTICLE) {
+        // Update smoke particles
+        entity.x += entity.vx * dt;
+        entity.y += entity.vy * dt;
+        // Fade out over time
+        if (entity.lifetime !== undefined) {
+          entity.lifetime -= dt;
+          if (entity.lifetime <= 0) {
+            entity.hp = -1; // Mark for removal
+          }
+        }
+      } else if (entity.type === EntityType.SAM_MISSILE || entity.type === EntityType.SSM_MISSILE) {
+        // Spawn smoke particles behind missile
+        if (!entity.smokeTimer) {
+          entity.smokeTimer = 0;
+        }
+        entity.smokeTimer += dt;
+        if (entity.smokeTimer >= 30) { // Spawn smoke every 30ms (denser trail)
+          entity.smokeTimer = 0;
+          // Spawn smoke particle slightly behind and to the side of missile
+          const smokeX = entity.x - Math.abs(entity.vx) * 10; // Behind missile
+          const smokeY = entity.y + (Math.random() - 0.5) * 4; // Slight random offset
+          const smoke = createSmokeParticle(smokeX, smokeY);
+          this.smokeParticles.push(smoke);
+        }
+        
+        // SAM missiles - find target and update movement
+        if (entity.type === EntityType.SAM_MISSILE) {
+          let target: Entity | null = null;
+          if (entity.targetId !== undefined) {
+            target = this.entities.find(e => e.id === entity.targetId && 
+              e.hp !== undefined && e.hp > 0) || null;
+          }
+          
+          // SAM missiles disappear if they lose their target
+          if (!target && entity.targetId !== undefined) {
+            // Target was lost - remove the missile silently
+            entity.hp = -1; // Mark for removal
+          } else {
+            updateHomingMissile(entity, target, dt);
+            // Update lifetime
+            if (entity.lifetime !== undefined) {
+              entity.lifetime -= dt;
+              if (entity.lifetime <= 0) {
+                entity.hp = -1; // Mark for removal
+              }
+            }
+          }
+        } else if (entity.type === EntityType.SSM_MISSILE) {
+          // SSM missiles - fly straight initially, then start homing
+          if (entity.homingDelay !== undefined && entity.homingDelay > 0) {
+            // Still in initial flight phase - fly straight forward
+            entity.homingDelay -= dt;
+            entity.x += entity.vx * dt;
+            entity.y += entity.vy * dt;
+            
+            // Update lifetime
+            if (entity.lifetime !== undefined) {
+              entity.lifetime -= dt;
+              if (entity.lifetime <= 0) {
+                entity.hp = -1; // Mark for removal
+              }
+            }
+          } else {
+            // Initial phase complete - start homing
+            let target: Entity | null = null;
+            if (entity.targetId !== undefined) {
+              target = this.entities.find(e => e.id === entity.targetId && 
+                e.hp !== undefined && e.hp > 0) || null;
+            }
+            
+            // If no target was set initially, try to find one now (only within 30° cone to the right)
+            if (!target) {
+              // Calculate current direction angle from velocity
+              const directionAngle = Math.atan2(entity.vy, entity.vx);
+              const ssmTarget = this.findSSMTarget(entity.x, entity.y, directionAngle);
+              if (ssmTarget) {
+                entity.targetId = ssmTarget.id;
+                target = ssmTarget;
+              }
+            }
+            
+            updateHomingMissile(entity, target, dt);
+            // Update lifetime
+            if (entity.lifetime !== undefined) {
+              entity.lifetime -= dt;
+              if (entity.lifetime <= 0) {
+                entity.hp = -1; // Mark for removal
+              }
+            }
+          }
+        }
       } else {
         updateEntityMovement(entity, dt);
       }
@@ -248,6 +455,16 @@ export class Game {
       }
     }
     this.explosions = this.explosions.filter(e => e.lifetime === undefined || e.lifetime > 0);
+    
+    // Update smoke particles
+    for (const smoke of this.smokeParticles) {
+      smoke.x += smoke.vx * dt;
+      smoke.y += smoke.vy * dt;
+      if (smoke.lifetime !== undefined) {
+        smoke.lifetime -= dt;
+      }
+    }
+    this.smokeParticles = this.smokeParticles.filter(e => e.lifetime === undefined || e.lifetime > 0);
     
     // Check collisions
     const hits = checkCollisions(this.entities);
@@ -321,8 +538,10 @@ export class Game {
             };
             this.explosions.push(exp);
           }
-          // Only remove bullets, not railgun beams (they pierce through)
-          if (hit.entity2.type === EntityType.BULLET) {
+          // Remove bullets and missiles (but not railgun beams - they pierce through)
+          if (hit.entity2.type === EntityType.BULLET || 
+              hit.entity2.type === EntityType.SAM_MISSILE ||
+              hit.entity2.type === EntityType.SSM_MISSILE) {
             hit.entity2.hp = -1;
           }
         }
@@ -358,7 +577,7 @@ export class Game {
   }
 
   getEntities(): Entity[] {
-    return [...this.entities, ...this.explosions];
+    return [...this.entities, ...this.explosions, ...this.smokeParticles];
   }
 
   getPlayer(): Player {
@@ -387,6 +606,10 @@ export class Game {
 
   getLaserBeamTarget(): { x: number; y: number } | null {
     return this.laserBeamTarget;
+  }
+
+  getSAMTarget(): Entity | null {
+    return this.samTarget;
   }
 }
 

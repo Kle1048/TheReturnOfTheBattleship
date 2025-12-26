@@ -8,6 +8,9 @@ export enum EntityType {
   ENEMY_FRIGATE,
   BULLET,
   RAILGUN_BEAM,
+  SAM_MISSILE,
+  SSM_MISSILE,
+  SMOKE_PARTICLE,
   EXPLOSION,
   POWER_UP
 }
@@ -50,6 +53,11 @@ export interface Entity {
   // Projectile specific
   damage?: number;
   owner?: number; // Entity ID of owner
+  
+  // Missile specific
+  targetId?: number; // Entity ID of target for homing missiles
+  homingDelay?: number; // Time remaining before homing starts (for SSM)
+  smokeTimer?: number; // Timer for spawning smoke particles
 }
 
 let nextId = 1;

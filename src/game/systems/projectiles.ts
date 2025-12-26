@@ -2,6 +2,36 @@ import { Entity, EntityType, createEntity } from "../entities/entity";
 import { Sprite } from "../../engine/render/blit";
 import { W } from "../../engine/render/constants";
 
+// Create smoke particle sprite
+function createSmokeParticleSprite(): Sprite {
+  const w = 3;
+  const h = 3;
+  const px = new Uint8Array(w * h);
+  // Create a small gray/white smoke particle
+  for (let i = 0; i < px.length; i++) {
+    const x = i % w;
+    const y = Math.floor(i / w);
+    // Center pixel is brighter, edges are darker
+    if (x === 1 && y === 1) {
+      px[i] = 7; // Light gray center
+    } else {
+      px[i] = 6; // Darker gray edges
+    }
+  }
+  return { w, h, px };
+}
+
+export function createSmokeParticle(x: number, y: number): Entity {
+  const sprite = createSmokeParticleSprite();
+  const particle = createEntity(EntityType.SMOKE_PARTICLE, x, y, sprite);
+  // Smoke drifts slightly backward (no upward movement)
+  particle.vx = -0.02; // Slight backward drift
+  particle.vy = 0; // No vertical movement
+  particle.lifetime = 1200; // 1200ms lifetime (shorter trail)
+  particle.maxLifetime = 1200;
+  return particle;
+}
+
 // Create player bullet sprite
 function createPlayerBulletSprite(): Sprite {
   const w = 4;
@@ -74,5 +104,90 @@ export function createRailgunBeam(startX: number, y: number, charge: number, own
   beam.lifetime = 200; // Short but visible
   beam.maxLifetime = 200;
   return beam;
+}
+
+// Create SAM (Surface-to-Air Missile) sprite - red/orange
+function createSAMMissileSprite(): Sprite {
+  const w = 6;
+  const h = 6;
+  const px = new Uint8Array(w * h);
+  // Create a small red missile sprite
+  for (let i = 0; i < px.length; i++) {
+    const x = i % w;
+    const y = Math.floor(i / w);
+    // Center pixel is bright red, edges are darker
+    if ((x === 2 || x === 3) && (y === 2 || y === 3)) {
+      px[i] = 12; // Bright red center
+    } else if ((x >= 1 && x <= 4) && (y >= 1 && y <= 4)) {
+      px[i] = 4; // Darker red body
+    } else {
+      px[i] = 0; // Transparent/black edges
+    }
+  }
+  return { w, h, px };
+}
+
+// Create SSM (Surface-to-Ship Missile) sprite - blue/cyan
+function createSSMMissileSprite(): Sprite {
+  const w = 6;
+  const h = 6;
+  const px = new Uint8Array(w * h);
+  // Create a small blue missile sprite
+  for (let i = 0; i < px.length; i++) {
+    const x = i % w;
+    const y = Math.floor(i / w);
+    // Center pixel is bright cyan, edges are darker
+    if ((x === 2 || x === 3) && (y === 2 || y === 3)) {
+      px[i] = 11; // Bright cyan center
+    } else if ((x >= 1 && x <= 4) && (y >= 1 && y <= 4)) {
+      px[i] = 3; // Darker blue body
+    } else {
+      px[i] = 0; // Transparent/black edges
+    }
+  }
+  return { w, h, px };
+}
+
+export function createSAMMissile(x: number, y: number, targetId: number, ownerId: number): Entity {
+  const sprite = createSAMMissileSprite();
+  const missile = createEntity(EntityType.SAM_MISSILE, x, y, sprite);
+  // Initial velocity forward (will be adjusted by homing)
+  missile.vx = 0.22; // Faster forward speed
+  missile.vy = 0;
+  missile.damage = 30; // High damage for air targets
+  missile.owner = ownerId;
+  missile.targetId = targetId;
+  missile.hitbox = {
+    x: -3,
+    y: -3,
+    w: 6,
+    h: 6
+  };
+  missile.lifetime = 5000; // 5 seconds max lifetime
+  missile.maxLifetime = 5000;
+  return missile;
+}
+
+export function createSSMMissile(x: number, y: number, targetId: number | null, ownerId: number): Entity {
+  const sprite = createSSMMissileSprite();
+  const missile = createEntity(EntityType.SSM_MISSILE, x, y, sprite);
+  // Initial velocity forward (will be adjusted by homing after initial flight phase)
+  missile.vx = 0.12; // Slightly slower than SAM
+  missile.vy = 0;
+  missile.damage = 50; // Higher damage for ships (they have more HP)
+  missile.owner = ownerId;
+  if (targetId !== null) {
+    missile.targetId = targetId;
+  }
+  missile.hitbox = {
+    x: -3,
+    y: -3,
+    w: 6,
+    h: 6
+  };
+  missile.lifetime = 6000; // 6 seconds max lifetime (ships might be further)
+  missile.maxLifetime = 6000;
+  missile.homingDelay = 300; // Fly straight for 300ms before starting homing
+  return missile;
 }
 

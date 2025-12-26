@@ -55,6 +55,8 @@ function getInput() {
   const fire = input.isKeyDown("Space") || input.isMouseDown(0);
   const railgun = input.isKeyDown("KeyR") || input.isMouseDown(2);
   const laser = input.isKeyPressed("KeyE"); // Once per press, not hold
+  const sam = input.isKeyPressed("KeyF"); // SAM - once per press, needs target lock
+  const ssm = input.isKeyPressed("KeyT"); // SSM - once per press, auto-targets
   const promptStrike = input.isKeyDown("KeyQ");
   
   return {
@@ -65,6 +67,8 @@ function getInput() {
     fire,
     railgun,
     laser,
+    sam,
+    ssm,
     promptStrike
   };
 }
@@ -133,6 +137,7 @@ const loop = new GameLoop(
       game.getScreenShake(),
       game.state === GameState.RUNNING ? game.getLaserTarget() : null,
       game.state === GameState.RUNNING ? game.getLaserBeamTarget() : null,
+      game.state === GameState.RUNNING ? game.getSAMTarget() : null,
       game.state === GameState.RUNNING ? game.getFlashTime() : 0,
       lastDt // Delta time für Animation
     );

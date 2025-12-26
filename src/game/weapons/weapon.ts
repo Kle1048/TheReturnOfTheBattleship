@@ -30,7 +30,7 @@ export class WeaponSystem {
   
   // AA Missile
   private aaCooldown = 0;
-  private aaRate = 800; // ms between shots
+  private aaRate = 500; // ms between shots (reduced cooldown)
   
   // SSM
   private ssmCooldown = 0;

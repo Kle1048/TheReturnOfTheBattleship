@@ -21,6 +21,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      position: relative;
     }
     #screen {
       display: block;
@@ -31,11 +32,152 @@
       /* Verhindert unscharfe Skalierung */
       image-rendering: -webkit-optimize-contrast;
       /* Canvas wird via CSS skaliert, bleibt aber 320x200 intern */
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* Mobile Controls - nur auf Touch-Geräten sichtbar */
+    #mobile-controls {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+      display: none;
+    }
+    
+    @media (hover: none) and (pointer: coarse) {
+      #mobile-controls {
+        display: block;
+      }
+    }
+    
+    /* Joystick Zone - links unten */
+    #joystick-zone {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 30%;
+      height: 40%;
+      pointer-events: all;
+    }
+    
+    /* Button Zone - rechts */
+    #button-zone {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 25%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      padding: 20px;
+      pointer-events: all;
+    }
+    
+    .weapon-button {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, 0.8);
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      font-size: 10px;
+      font-family: monospace;
+      font-weight: bold;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      touch-action: none;
+      transition: background 0.1s;
+    }
+    
+    .weapon-button:active {
+      background: rgba(255, 255, 255, 0.8);
+      color: black;
+    }
+    
+    .weapon-button.disabled {
+      opacity: 0.4;
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    #fire-btn {
+      background: rgba(255, 100, 100, 0.6);
+    }
+    
+    #fire-btn:active {
+      background: rgba(255, 150, 150, 0.9);
+    }
+    
+    #railgun-btn {
+      background: rgba(150, 150, 255, 0.6);
+    }
+    
+    #railgun-btn:active {
+      background: rgba(200, 200, 255, 0.9);
+    }
+    
+    #laser-btn {
+      background: rgba(255, 255, 100, 0.6);
+    }
+    
+    #laser-btn:active {
+      background: rgba(255, 255, 150, 0.9);
+    }
+    
+    #sam-btn {
+      background: rgba(100, 255, 100, 0.6);
+    }
+    
+    #sam-btn:active {
+      background: rgba(150, 255, 150, 0.9);
+    }
+    
+    #ssm-btn {
+      background: rgba(255, 150, 255, 0.6);
+    }
+    
+    #ssm-btn:active {
+      background: rgba(255, 200, 255, 0.9);
+    }
+    
+    #prompt-strike-btn {
+      background: rgba(255, 200, 0, 0.6);
+      width: 70px;
+      height: 70px;
+      font-size: 9px;
+    }
+    
+    #prompt-strike-btn:active {
+      background: rgba(255, 220, 50, 0.9);
     }
   </style>
 </head>
 <body>
   <canvas id="screen"></canvas>
+  
+  <!-- Mobile Controls -->
+  <div id="mobile-controls">
+    <div id="joystick-zone"></div>
+    <div id="button-zone">
+      <button id="fire-btn" class="weapon-button">FIRE</button>
+      <button id="railgun-btn" class="weapon-button">RAIL</button>
+      <button id="laser-btn" class="weapon-button">LASER</button>
+      <button id="sam-btn" class="weapon-button">SAM</button>
+      <button id="ssm-btn" class="weapon-button">SSM</button>
+      <button id="prompt-strike-btn" class="weapon-button">ULT</button>
+    </div>
+  </div>
+  
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

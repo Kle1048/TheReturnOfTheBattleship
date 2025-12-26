@@ -5,6 +5,7 @@ import { AudioEngine } from "./engine/audio";
 import { Game, GameState } from "./game/game";
 import { GameRenderer } from "./game/renderer";
 import { assets } from "./assets/assets";
+import { MobileControls } from "./ui/mobile-controls";
 
 const canvas = document.getElementById("screen") as HTMLCanvasElement;
 if (!canvas) throw new Error("Canvas not found");
@@ -12,6 +13,7 @@ if (!canvas) throw new Error("Canvas not found");
 const renderer = new VGARenderer(canvas);
 const input = new InputManager();
 const audio = new AudioEngine();
+const mobileControls = new MobileControls();
 
 // Load assets before creating game
 let game: Game;
@@ -47,17 +49,45 @@ window.addEventListener("keydown", startAudio);
 
 // Input handling
 function getInput() {
-  const moveUp = input.isKeyDown("KeyW") || input.isKeyDown("ArrowUp");
-  const moveDown = input.isKeyDown("KeyS") || input.isKeyDown("ArrowDown");
-  const moveLeft = input.isKeyDown("KeyA") || input.isKeyDown("ArrowLeft");
-  const moveRight = input.isKeyDown("KeyD") || input.isKeyDown("ArrowRight");
+  const mobileState = mobileControls.getState();
+  const isMobile = mobileControls.isMobile();
   
-  const fire = input.isKeyDown("Space") || input.isMouseDown(0);
-  const railgun = input.isKeyDown("KeyR") || input.isMouseDown(2);
-  const laser = input.isKeyPressed("KeyE"); // Once per press, not hold
-  const sam = input.isKeyPressed("KeyF"); // SAM - once per press, needs target lock
-  const ssm = input.isKeyPressed("KeyT"); // SSM - once per press, auto-targets
-  const promptStrike = input.isKeyDown("KeyQ");
+  // Movement - Desktop oder Mobile Joystick
+  let moveUp = input.isKeyDown("KeyW") || input.isKeyDown("ArrowUp");
+  let moveDown = input.isKeyDown("KeyS") || input.isKeyDown("ArrowDown");
+  let moveLeft = input.isKeyDown("KeyA") || input.isKeyDown("ArrowLeft");
+  let moveRight = input.isKeyDown("KeyD") || input.isKeyDown("ArrowRight");
+  
+  // Mobile Joystick (wenn aktiv, überschreibt Desktop-Input)
+  if (isMobile && mobileState.joystickActive) {
+    const deadzone = 0.2;
+    if (Math.abs(mobileState.joystickY) > deadzone) {
+      moveUp = mobileState.joystickY < -deadzone;
+      moveDown = mobileState.joystickY > deadzone;
+    }
+    if (Math.abs(mobileState.joystickX) > deadzone) {
+      moveLeft = mobileState.joystickX < -deadzone;
+      moveRight = mobileState.joystickX > deadzone;
+    }
+  }
+  
+  // Fire - Desktop oder Mobile Button
+  const fire = input.isKeyDown("Space") || input.isMouseDown(0) || mobileState.fire;
+  
+  // Railgun - Desktop oder Mobile Button
+  const railgun = input.isKeyDown("KeyR") || input.isMouseDown(2) || mobileState.railgun;
+  
+  // Laser - Once per press (Desktop oder Mobile)
+  const laser = input.isKeyPressed("KeyE") || mobileState.laserPressed;
+  
+  // SAM - Once per press (Desktop oder Mobile)
+  const sam = input.isKeyPressed("KeyF") || mobileState.samPressed;
+  
+  // SSM - Once per press (Desktop oder Mobile)
+  const ssm = input.isKeyPressed("KeyT") || mobileState.ssmPressed;
+  
+  // Prompt Strike - Desktop oder Mobile Button
+  const promptStrike = input.isKeyDown("KeyQ") || mobileState.promptStrike;
   
   return {
     moveUp,
@@ -112,6 +142,7 @@ const loop = new GameLoop(
     
     // Clear pressed states at end of frame
     input.update();
+    mobileControls.update();
   },
   () => {
     // Render

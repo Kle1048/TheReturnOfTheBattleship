@@ -1,12 +1,14 @@
 // Minimal WebAudio mixer with SFX + Music buses. Mobile-safe: call resume() on first user gesture.
 
 export class AudioEngine {
-  private ctx: AudioContext;
-  private master: GainNode;
-  private sfxBus: GainNode;
-  private musicBus: GainNode;
+  private ctx: AudioContext | null = null;
+  private master: GainNode | null = null;
+  private sfxBus: GainNode | null = null;
+  private musicBus: GainNode | null = null;
 
-  constructor() {
+  private initContext() {
+    if (this.ctx) return; // Bereits initialisiert
+    
     const AC = window.AudioContext || (window as any).webkitAudioContext;
     this.ctx = new AC();
 
@@ -25,14 +27,26 @@ export class AudioEngine {
   }
 
   async resume() {
-    if (this.ctx.state !== "running") await this.ctx.resume();
+    this.initContext(); // Stelle sicher, dass Context initialisiert ist
+    if (this.ctx && this.ctx.state !== "running") {
+      await this.ctx.resume();
+    }
   }
 
-  setMusicVolume(v: number) { this.musicBus.gain.value = v; }
-  setSfxVolume(v: number) { this.sfxBus.gain.value = v; }
+  setMusicVolume(v: number) { 
+    this.initContext();
+    if (this.musicBus) this.musicBus.gain.value = v; 
+  }
+  setSfxVolume(v: number) { 
+    this.initContext();
+    if (this.sfxBus) this.sfxBus.gain.value = v; 
+  }
 
   // Simple synth SFX (no samples needed for MVP)
   private playBeep(freq = 440, dur = 0.08, type: OscillatorType = "square", vol = 0.25) {
+    this.initContext();
+    if (!this.ctx || !this.sfxBus) return; // Audio noch nicht initialisiert
+    
     const o = this.ctx.createOscillator();
     const g = this.ctx.createGain();
 
@@ -46,7 +60,7 @@ export class AudioEngine {
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
 
     o.connect(g);
-    g.connect(this.sfxBus);
+    g.connect(this.sfxBus!);
 
     o.start(t0);
     o.stop(t0 + dur + 0.02);

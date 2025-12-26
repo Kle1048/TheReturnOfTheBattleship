@@ -1,6 +1,6 @@
 # Dependencies
 node_modules/
-package-lock.json
+# package-lock.json - sollte committed werden für reproduzierbare Builds
 
 # Build outputs
 dist/

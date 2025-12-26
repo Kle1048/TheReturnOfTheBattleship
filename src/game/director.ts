@@ -16,8 +16,8 @@ export class SpawnDirector {
   update(dt: number, existingEnemies: Entity[]): Entity[] {
     const newEnemies: Entity[] = [];
     
-    // Heat increases over time
-    this.heat += dt * 0.01; // +1 per 100 seconds
+    // Heat increases over time (slower rate for better balance)
+    this.heat += dt * 0.005; // +1 per 200 seconds (half the original rate)
     
     // Heat affects spawn rate
     const spawnRate = Math.max(500, this.baseSpawnRate - this.heat * 10);

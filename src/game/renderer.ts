@@ -86,20 +86,31 @@ export class GameRenderer {
     // Draw sea background (animiert oder Fallback)
     this.drawSeaBackground(fb, dt);
     
-    // Sort entities by type for proper layering
+    // Sort entities by type and Y-position for proper layering
+    // Entities further down (higher Y) should be rendered first (in front)
+    // Entities further up (lower Y) should be rendered later (in background)
     const sortedEntities = [...entities].sort((a, b) => {
+      // First, sort by type for proper layering
       // Explosions and effects on top
-      if (a.type === EntityType.EXPLOSION) return 1;
-      if (b.type === EntityType.EXPLOSION) return -1;
+      if (a.type === EntityType.EXPLOSION && b.type !== EntityType.EXPLOSION) return 1;
+      if (b.type === EntityType.EXPLOSION && a.type !== EntityType.EXPLOSION) return -1;
       // Projectiles above enemies
-      if (a.type === EntityType.BULLET || a.type === EntityType.RAILGUN_BEAM) return 1;
-      if (b.type === EntityType.BULLET || b.type === EntityType.RAILGUN_BEAM) return -1;
+      if ((a.type === EntityType.BULLET || a.type === EntityType.RAILGUN_BEAM) &&
+          b.type !== EntityType.EXPLOSION && 
+          b.type !== EntityType.BULLET && b.type !== EntityType.RAILGUN_BEAM) return 1;
+      if ((b.type === EntityType.BULLET || b.type === EntityType.RAILGUN_BEAM) &&
+          a.type !== EntityType.EXPLOSION && 
+          a.type !== EntityType.BULLET && a.type !== EntityType.RAILGUN_BEAM) return -1;
       // Air enemies above sea enemies
       if ((a.type === EntityType.ENEMY_DRONE || a.type === EntityType.ENEMY_JET) &&
           (b.type === EntityType.ENEMY_BOAT || b.type === EntityType.ENEMY_FRIGATE)) return -1;
       if ((b.type === EntityType.ENEMY_DRONE || b.type === EntityType.ENEMY_JET) &&
           (a.type === EntityType.ENEMY_BOAT || a.type === EntityType.ENEMY_FRIGATE)) return 1;
-      return 0;
+      
+      // If same type (or both are enemies), sort by Y-position
+      // Higher Y values (further down) should be rendered first (in front)
+      // Lower Y values (further up) should be rendered later (in background)
+      return b.y - a.y;
     });
     
     // Draw entities

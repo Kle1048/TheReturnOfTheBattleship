@@ -71,11 +71,10 @@ export class Game {
     let nearestDist = maxRange;
     
     for (const entity of this.entities) {
-      // Check if it's an enemy
+      // Check if it's an air enemy (only air targets for laser)
       if (entity.type === EntityType.ENEMY_DRONE ||
           entity.type === EntityType.ENEMY_JET ||
-          entity.type === EntityType.ENEMY_BOAT ||
-          entity.type === EntityType.ENEMY_FRIGATE) {
+          entity.type === EntityType.ENEMY_ASM) {
         // Check if enemy is alive
         if (entity.hp !== undefined && entity.hp > 0) {
           // Calculate distance
@@ -94,16 +93,17 @@ export class Game {
     return nearestEnemy;
   }
 
-  // Find nearest air target (DRONE or JET) for SAM
+  // Find nearest air target (DRONE, JET, or ENEMY_ASM) for SAM
   private findSAMTarget(): Entity | null {
     const maxRange = 200; // Longer range for SAM
     let nearestAirTarget: Entity | null = null;
     let nearestDist = maxRange;
     
     for (const entity of this.entities) {
-      // Only air enemies
+      // Air enemies and enemy ASM (can be shot down)
       if (entity.type === EntityType.ENEMY_DRONE ||
-          entity.type === EntityType.ENEMY_JET) {
+          entity.type === EntityType.ENEMY_JET ||
+          entity.type === EntityType.ENEMY_ASM) {
         // Check if enemy is alive
         if (entity.hp !== undefined && entity.hp > 0) {
           // Calculate distance (only check X distance for range, Y doesn't matter much for air)
@@ -313,6 +313,7 @@ export class Game {
             e.type === EntityType.ENEMY_JET ||
             e.type === EntityType.ENEMY_BOAT ||
             e.type === EntityType.ENEMY_FRIGATE ||
+            e.type === EntityType.ENEMY_ASM ||
             e.type === EntityType.BULLET ||
             e.type === EntityType.SAM_MISSILE ||
             e.type === EntityType.SSM_MISSILE) {
@@ -350,7 +351,11 @@ export class Game {
           entity.type === EntityType.ENEMY_JET ||
           entity.type === EntityType.ENEMY_BOAT ||
           entity.type === EntityType.ENEMY_FRIGATE) {
-        updateEnemy(entity, dt);
+        const newBullets = updateEnemy(entity, dt, this.player.entity);
+        // Add any bullets fired by ships
+        if (newBullets.length > 0) {
+          this.entities.push(...newBullets);
+        }
       } else if (entity.type === EntityType.SMOKE_PARTICLE) {
         // Update smoke particles
         entity.x += entity.vx * dt;
@@ -362,7 +367,9 @@ export class Game {
             entity.hp = -1; // Mark for removal
           }
         }
-      } else if (entity.type === EntityType.SAM_MISSILE || entity.type === EntityType.SSM_MISSILE) {
+      } else if (entity.type === EntityType.SAM_MISSILE || 
+                 entity.type === EntityType.SSM_MISSILE ||
+                 entity.type === EntityType.ENEMY_ASM) {
         // Spawn smoke particles behind missile
         if (!entity.smokeTimer) {
           entity.smokeTimer = 0;
@@ -442,6 +449,44 @@ export class Game {
               }
             }
           }
+        } else if (entity.type === EntityType.ENEMY_ASM) {
+          // Enemy ASM missiles - fly straight initially, then start homing at player
+          if (entity.homingDelay !== undefined && entity.homingDelay > 0) {
+            // Still in initial flight phase - fly straight forward
+            entity.homingDelay -= dt;
+            entity.x += entity.vx * dt;
+            entity.y += entity.vy * dt;
+            
+            // Update lifetime
+            if (entity.lifetime !== undefined) {
+              entity.lifetime -= dt;
+              if (entity.lifetime <= 0) {
+                entity.hp = -1; // Mark for removal
+              }
+            }
+          } else {
+            // Initial phase complete - start homing at player
+            let target: Entity | null = null;
+            if (entity.targetId !== undefined) {
+              target = this.entities.find(e => e.id === entity.targetId && 
+                e.hp !== undefined && e.hp > 0) || null;
+            }
+            
+            // If no target, target the player
+            if (!target && this.player.entity.hp !== undefined && this.player.entity.hp > 0) {
+              target = this.player.entity;
+              entity.targetId = this.player.entity.id;
+            }
+            
+            updateHomingMissile(entity, target, dt, 0.0015); // Reduced turn rate for player evasion
+            // Update lifetime
+            if (entity.lifetime !== undefined) {
+              entity.lifetime -= dt;
+              if (entity.lifetime <= 0) {
+                entity.hp = -1; // Mark for removal
+              }
+            }
+          }
         }
       } else {
         updateEntityMovement(entity, dt);
@@ -492,9 +537,11 @@ export class Game {
         } else if (hit.entity2.type === EntityType.ENEMY_DRONE ||
                    hit.entity2.type === EntityType.ENEMY_JET ||
                    hit.entity2.type === EntityType.ENEMY_BOAT ||
-                   hit.entity2.type === EntityType.ENEMY_FRIGATE) {
-          // Ramming damage
-          this.player.takeDamage(20);
+                   hit.entity2.type === EntityType.ENEMY_FRIGATE ||
+                   hit.entity2.type === EntityType.ENEMY_ASM) {
+          // Ramming damage (ASM does more damage)
+          const damage = hit.entity2.type === EntityType.ENEMY_ASM ? 40 : 20;
+          this.player.takeDamage(damage);
           hit.entity2.hp = -1;
           
           // Create explosion
@@ -514,14 +561,21 @@ export class Game {
       } else if (hit.entity1.type === EntityType.ENEMY_DRONE ||
                  hit.entity1.type === EntityType.ENEMY_JET ||
                  hit.entity1.type === EntityType.ENEMY_BOAT ||
-                 hit.entity1.type === EntityType.ENEMY_FRIGATE) {
+                 hit.entity1.type === EntityType.ENEMY_FRIGATE ||
+                 hit.entity1.type === EntityType.ENEMY_ASM) {
         // Enemy hit by bullet/beam
         if (hit.entity2.damage) {
           hit.entity1.hp = (hit.entity1.hp || 0) - hit.entity2.damage;
           if (hit.entity1.hp <= 0) {
             // Enemy killed
-            this.score += 10 * (hit.entity1.enemyType || 1);
-            this.weapons.addPower(5); // Same as laser kills
+            if (hit.entity1.type === EntityType.ENEMY_ASM) {
+              // ASM gives less score
+              this.score += 5;
+              this.weapons.addPower(2);
+            } else {
+              this.score += 10 * (hit.entity1.enemyType || 1);
+              this.weapons.addPower(5); // Same as laser kills
+            }
             this.director.reduceHeat(1);
             
             // Create explosion

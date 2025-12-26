@@ -6,6 +6,7 @@ export enum EntityType {
   ENEMY_JET,
   ENEMY_BOAT,
   ENEMY_FRIGATE,
+  ENEMY_ASM, // Enemy Anti-Ship Missile
   BULLET,
   RAILGUN_BEAM,
   SAM_MISSILE,

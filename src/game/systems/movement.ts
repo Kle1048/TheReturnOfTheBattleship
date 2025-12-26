@@ -68,6 +68,7 @@ export function updateEntityMovement(entity: Entity, dt: number) {
   if (entity.type === EntityType.BULLET || 
       entity.type === EntityType.SAM_MISSILE ||
       entity.type === EntityType.SSM_MISSILE ||
+      entity.type === EntityType.ENEMY_ASM ||
       entity.type === EntityType.ENEMY_DRONE ||
       entity.type === EntityType.ENEMY_JET ||
       entity.type === EntityType.ENEMY_BOAT ||

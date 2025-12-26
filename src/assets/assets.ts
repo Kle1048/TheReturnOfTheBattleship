@@ -16,10 +16,14 @@ export class AssetManager {
    * Lädt alle Sprites und Hintergründe
    */
   async loadAll(): Promise<void> {
+    // Base URL für Assets (unterstützt GitHub Pages base path)
+    // import.meta.env.BASE_URL wird von Vite automatisch gesetzt
+    const baseUrl = (import.meta as any).env?.BASE_URL || '/';
+    
     // Player Sprite Sheet: 4 Frames, 64x32 Pixel pro Frame
     // Erwartete Sheet-Größe: 256x32 Pixel (4 Frames horizontal)
     this.playerSprite = await loadSpriteSheet(
-      "assets/player.png",
+      `${baseUrl}assets/player.png`,
       64,  // frameWidth
       32,  // frameHeight
       {
@@ -32,7 +36,7 @@ export class AssetManager {
     // Erwartete Sheet-Größe: 128x32 Pixel (4 Frames horizontal)
     try {
       this.seaSprite = await loadSpriteSheet(
-        "assets/sea.png",
+        `${baseUrl}assets/sea.png`,
         32,  // frameWidth
         32,  // frameHeight
         {
@@ -49,7 +53,7 @@ export class AssetManager {
     // Erwartete Sheet-Größe: 56x20 Pixel (2 Frames horizontal)
     try {
       this.boatSprite = await loadSpriteSheet(
-        "assets/boat.png",
+        `${baseUrl}assets/boat.png`,
         28,  // frameWidth
         20,  // frameHeight
         {
@@ -66,7 +70,7 @@ export class AssetManager {
     // Erwartete Sheet-Größe: 72x24 Pixel (2 Frames horizontal)
     try {
       this.frigateSprite = await loadSpriteSheet(
-        "assets/frigate.png",
+        `${baseUrl}assets/frigate.png`,
         36,  // frameWidth
         24,  // frameHeight
         {
@@ -83,7 +87,7 @@ export class AssetManager {
     // Erwartete Sheet-Größe: 48x16 Pixel (2 Frames horizontal)
     try {
       this.jetSprite = await loadSpriteSheet(
-        "assets/jet.png",
+        `${baseUrl}assets/jet.png`,
         24,  // frameWidth
         16,  // frameHeight
         {
@@ -100,7 +104,7 @@ export class AssetManager {
     // Erwartete Sheet-Größe: 24x12 Pixel (2 Frames horizontal)
     try {
       this.droneSprite = await loadSpriteSheet(
-        "assets/drone.png",
+        `${baseUrl}assets/drone.png`,
         12,  // frameWidth
         12,  // frameHeight
         {

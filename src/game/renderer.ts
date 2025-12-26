@@ -5,6 +5,7 @@ import { Entity, EntityType } from "./entities/entity";
 import { createSkyPattern, createSeaPattern } from "../assets/sprites";
 import { renderHUD } from "../ui/hud";
 import { renderTitleScreen, renderGameOverScreen } from "../ui/menu";
+import { renderText } from "../ui/font";
 import { assets } from "../assets/assets";
 import { AnimatedSprite, AnimationState, createAnimationState, updateAnimation } from "../engine/render/animation";
 import { Sprite } from "../engine/render/blit";
@@ -74,14 +75,9 @@ export class GameRenderer {
     const shakeX = Math.floor(screenShake.x);
     const shakeY = Math.floor(screenShake.y);
     
-    // Draw sky background (simple pattern)
+    // Draw sky background (optimized: use fillRect instead of pixel-by-pixel)
     this.skyScroll += 0.01;
-    for (let y = 0; y < SEA_Y; y++) {
-      for (let x = 0; x < W; x++) {
-        const idx = y * W + x;
-        fb[idx] = 3; // Light blue sky
-      }
-    }
+    fillRect(fb, 0, 0, W, SEA_Y, 3); // Light blue sky
     
     // Draw sea background (animiert oder Fallback)
     this.drawSeaBackground(fb, dt);
@@ -125,64 +121,13 @@ export class GameRenderer {
       blit(fb, entity.sprite, x, y);
     }
     
-    // Draw laser target indicator (frame around target if within 60 pixels)
+    // Draw LASER marker in upper half and center of screen when target is in range
     if (laserTarget && laserTarget.hp !== undefined && laserTarget.hp > 0) {
-      const targetX = Math.floor(laserTarget.x + shakeX);
-      const targetY = Math.floor(laserTarget.y + shakeY);
-      const sprite = laserTarget.sprite;
-      const frameSize = 2; // Frame thickness
-      
-      // Draw frame around target (white/yellow color)
-      const frameColor = 11; // Yellow/white
-      const left = targetX - sprite.w / 2 - frameSize;
-      const right = targetX + sprite.w / 2 + frameSize;
-      const top = targetY - sprite.h / 2 - frameSize;
-      const bottom = targetY + sprite.h / 2 + frameSize;
-      
-      // Top and bottom lines
-      for (let x = left; x <= right; x++) {
-        if (x >= 0 && x < W) {
-          if (top >= 0 && top < H) fb[top * W + x] = frameColor;
-          if (bottom >= 0 && bottom < H) fb[bottom * W + x] = frameColor;
-        }
-      }
-      // Left and right lines
-      for (let y = top; y <= bottom; y++) {
-        if (y >= 0 && y < H) {
-          if (left >= 0 && left < W) fb[y * W + left] = frameColor;
-          if (right >= 0 && right < W) fb[y * W + right] = frameColor;
-        }
-      }
-    }
-    
-    // Draw SAM target indicator (red frame around locked air target)
-    if (samTarget && samTarget.hp !== undefined && samTarget.hp > 0) {
-      const targetX = Math.floor(samTarget.x + shakeX);
-      const targetY = Math.floor(samTarget.y + shakeY);
-      const sprite = samTarget.sprite;
-      const frameSize = 2; // Frame thickness
-      
-      // Draw frame around target (red color for SAM lock)
-      const frameColor = 12; // Red
-      const left = targetX - sprite.w / 2 - frameSize;
-      const right = targetX + sprite.w / 2 + frameSize;
-      const top = targetY - sprite.h / 2 - frameSize;
-      const bottom = targetY + sprite.h / 2 + frameSize;
-      
-      // Top and bottom lines
-      for (let x = left; x <= right; x++) {
-        if (x >= 0 && x < W) {
-          if (top >= 0 && top < H) fb[top * W + x] = frameColor;
-          if (bottom >= 0 && bottom < H) fb[bottom * W + x] = frameColor;
-        }
-      }
-      // Left and right lines
-      for (let y = top; y <= bottom; y++) {
-        if (y >= 0 && y < H) {
-          if (left >= 0 && left < W) fb[y * W + left] = frameColor;
-          if (right >= 0 && right < W) fb[y * W + right] = frameColor;
-        }
-      }
+      const laserText = "LASER";
+      const textWidth = laserText.length * 8; // 8 pixels per character
+      const textX = Math.floor((W - textWidth) / 2); // Center horizontally
+      const textY = 40; // Upper half (H/5 = 40)
+      renderText(fb, laserText, textX, textY, 11); // Orange color
     }
     
     // Draw laser beam (bright red line from player to target when firing)
@@ -213,26 +158,29 @@ export class GameRenderer {
     );
     
     // Draw flash effect (white overlay for Prompt Strike)
+    // Optimized: pre-calculate which columns to draw (vertical stripes)
     if (flashTime > 0) {
-      // Flash intensity: starts at 1.0 and fades to 0 over the duration
-      // Since VGA doesn't support alpha, we use a pattern that gets sparser as it fades
       const maxFlashDuration = 150; // ms
       const intensity = Math.max(0, Math.min(1, flashTime / maxFlashDuration)); // Clamp between 0 and 1
       
       // Only draw flash if intensity is significant
       if (intensity > 0.01) {
-        // Draw white pixels using vertical stripes that fade out
-        const stripeWidth = 3; // Width of each stripe
+        // Optimized: pre-calculate stripe pattern for columns (vertical stripes)
+        const stripeWidth = 3;
+        const whiteColor = 9;
+        const columnsToDraw = new Array<boolean>(W);
+        for (let x = 0; x < W; x++) {
+          const stripeIndex = Math.floor(x / stripeWidth);
+          const stripePatternValue = (stripeIndex % 20) / 20;
+          columnsToDraw[x] = stripePatternValue < intensity;
+        }
+        
+        // Apply pattern to all rows
         for (let y = 0; y < H; y++) {
+          const rowOffset = y * W;
           for (let x = 0; x < W; x++) {
-            // Create vertical stripes pattern
-            const stripeIndex = Math.floor(x / stripeWidth);
-            const stripePatternValue = (stripeIndex % 20) / 20; // Pattern value 0-1 for fade
-            
-            // Draw white pixel if pattern value is below intensity threshold
-            // This creates vertical stripes that fade out as intensity decreases
-            if (stripePatternValue < intensity) {
-              fb[y * W + x] = 9; // White
+            if (columnsToDraw[x]) {
+              fb[rowOffset + x] = whiteColor;
             }
           }
         }
@@ -251,17 +199,9 @@ export class GameRenderer {
       // Zeichne animiertes Tile
       this.drawTiledSprite(fb, currentFrame, 0, SEA_Y, W, SEA_HEIGHT);
     } else {
-      // Fallback: Verwende altes Pattern
-      for (let y = SEA_Y; y < H; y++) {
-        for (let x = 0; x < W; x++) {
-          const idx = y * W + x;
-          const seaY = y - SEA_Y;
-          const seaIdx = seaY * W + x;
-          if (seaIdx < this.seaPatternFallback.length) {
-            fb[idx] = this.seaPatternFallback[seaIdx];
-          }
-        }
-      }
+      // Fallback: Verwende altes Pattern (optimized: direct array copy)
+      // seaPatternFallback is W * SEA_HEIGHT, copy directly to framebuffer at SEA_Y offset
+      fb.set(this.seaPatternFallback, SEA_Y * W);
     }
   }
 
@@ -298,11 +238,9 @@ export class GameRenderer {
         // Überspringe Transparenz
         if (pixel === 0) continue;
         
-        // Zeichne Pixel
-        if (screenX >= 0 && screenX < W && screenY >= 0 && screenY < H) {
-          const idx = screenY * W + screenX;
-          fb[idx] = pixel;
-        }
+        // Zeichne Pixel (bounds check removed - function only called with safe parameters)
+        const idx = screenY * W + screenX;
+        fb[idx] = pixel;
       }
     }
   }

@@ -47,6 +47,9 @@ canvas.addEventListener("click", startAudio);
 canvas.addEventListener("touchstart", startAudio);
 window.addEventListener("keydown", startAudio);
 
+// Autofire toggle state
+let autofireEnabled = false;
+
 // Input handling
 function getInput() {
   const mobileState = mobileControls.getState();
@@ -72,8 +75,8 @@ function getInput() {
     }
   }
   
-  // Fire - Desktop oder Mobile Button
-  const fire = input.isKeyDown("Space") || input.isMouseDown(0) || mobileState.fire;
+  // Fire - Desktop oder Mobile Button (oder Autofire wenn aktiviert)
+  const fire = autofireEnabled || input.isKeyDown("Space") || input.isMouseDown(0) || mobileState.fire;
   
   // Railgun - Desktop oder Mobile Button
   const railgun = input.isKeyDown("KeyR") || input.isMouseDown(2) || mobileState.railgun;
@@ -124,7 +127,22 @@ const loop = new GameLoop(
       if (inp.fire) {
         game.state = GameState.TITLE;
       }
+    } else if (game.state === GameState.HELP) {
+      // H-Taste zum Zurückkehren zum Spiel
+      if (input.isKeyPressed("KeyH")) {
+        game.state = GameState.RUNNING;
+      }
     } else if (game && game.state === GameState.RUNNING) {
+      // Toggle Help/Pause mit H-Taste
+      if (input.isKeyPressed("KeyH")) {
+        game.state = GameState.HELP;
+      }
+      
+      // Toggle Autofire mit X-Taste
+      if (input.isKeyPressed("KeyX")) {
+        autofireEnabled = !autofireEnabled;
+      }
+      
       const inp = getInput();
       
       // Play SFX
@@ -155,7 +173,9 @@ const loop = new GameLoop(
     }
     
     const stateStr = game.state === GameState.TITLE ? "title" :
-                     game.state === GameState.GAME_OVER ? "gameover" : "running";
+                     game.state === GameState.GAME_OVER ? "gameover" :
+                     game.state === GameState.HELP ? "help" :
+                     game.state === GameState.PAUSE ? "pause" : "running";
     
     gameRenderer.render(
       renderer,

@@ -3,8 +3,9 @@ import { W, H } from "../../engine/render/constants";
 
 /**
  * Updates homing missile movement - gradually turns towards target
+ * turnRate is in radians per second (scaled by dt)
  */
-export function updateHomingMissile(missile: Entity, target: Entity | null, dt: number, turnRate: number = 0.003) {
+export function updateHomingMissile(missile: Entity, target: Entity | null, dt: number, turnRate: number = 18.0) {
   if (!target || target.hp === undefined || target.hp <= 0) {
     // No target or target dead - continue horizontally (maintain forward momentum, no vertical drift)
     // This prevents missiles from falling when target is lost
@@ -36,7 +37,8 @@ export function updateHomingMissile(missile: Entity, target: Entity | null, dt: 
   const currentSpeed = Math.sqrt(missile.vx * missile.vx + missile.vy * missile.vy);
   
   // Interpolate towards target direction (turn rate limits how fast it can turn)
-  const turnAmount = turnRate * dt * 1000; // Scale by dt
+  // turnRate is per second, dt is in milliseconds, so scale appropriately
+  const turnAmount = Math.min(1.0, turnRate * dt / 1000);
   missile.vx += (targetVx * currentSpeed - missile.vx) * turnAmount;
   missile.vy += (targetVy * currentSpeed - missile.vy) * turnAmount;
   

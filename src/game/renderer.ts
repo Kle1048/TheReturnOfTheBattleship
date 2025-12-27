@@ -4,7 +4,7 @@ import { W, H, SEA_Y, SEA_HEIGHT } from "../engine/render/constants";
 import { Entity, EntityType } from "./entities/entity";
 import { createSkyPattern, createSeaPattern } from "../assets/sprites";
 import { renderHUD } from "../ui/hud";
-import { renderTitleScreen, renderGameOverScreen } from "../ui/menu";
+import { renderTitleScreen, renderGameOverScreen, renderPauseScreen, renderHelpScreen } from "../ui/menu";
 import { renderText } from "../ui/font";
 import { assets } from "../assets/assets";
 import { AnimatedSprite, AnimationState, createAnimationState, updateAnimation } from "../engine/render/animation";
@@ -42,7 +42,7 @@ export class GameRenderer {
 
   render(
     renderer: VGARenderer,
-    state: "title" | "running" | "gameover",
+    state: "title" | "running" | "pause" | "help" | "gameover",
     entities: Entity[],
     player: any,
     weapons: any,
@@ -60,6 +60,16 @@ export class GameRenderer {
     
     if (state === "title") {
       renderTitleScreen(fb);
+      return;
+    }
+    
+    if (state === "pause") {
+      renderPauseScreen(fb);
+      return;
+    }
+    
+    if (state === "help") {
+      renderHelpScreen(fb);
       return;
     }
     

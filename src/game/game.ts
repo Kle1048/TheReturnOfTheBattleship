@@ -12,6 +12,8 @@ import { AnimatedSprite } from "../engine/render/animation";
 export enum GameState {
   TITLE,
   RUNNING,
+  PAUSE,
+  HELP,
   GAME_OVER
 }
 
@@ -480,7 +482,7 @@ export class Game {
               entity.targetId = this.player.entity.id;
             }
             
-            updateHomingMissile(entity, target, dt, 0.0015); // Reduced turn rate for player evasion
+            updateHomingMissile(entity, target, dt, 9.0); // Reduced turn rate for player evasion
             // Update lifetime
             if (entity.lifetime !== undefined) {
               entity.lifetime -= dt;

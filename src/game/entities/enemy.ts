@@ -165,7 +165,7 @@ export function updateEnemy(entity: Entity, dt: number, player: Entity | null = 
       
       // Use gradual turning instead of instant direction change
       // This makes drones less agile and allows player to evade
-      const turnRate = 0.002; // Slower turning rate
+      const turnRate = 12.0; // Slower turning rate (per second, adjusted for corrected formula)
       const targetSpeed = 0.10; // Slightly reduced speed
       
       // Interpolate towards target direction (similar to homing missiles)
@@ -177,7 +177,8 @@ export function updateEnemy(entity: Entity, dt: number, player: Entity | null = 
       const desiredVy = targetVy * desiredSpeed;
       
       // Gradually turn towards target
-      const turnAmount = turnRate * dt * 1000;
+      // turnRate is per second, dt is in milliseconds, so scale appropriately
+      const turnAmount = Math.min(1.0, turnRate * dt / 1000);
       entity.vx += (desiredVx - entity.vx) * turnAmount;
       entity.vy += (desiredVy - entity.vy) * turnAmount;
       

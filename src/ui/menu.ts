@@ -16,10 +16,61 @@ export function renderTitleScreen(fb: Uint8Array) {
   const subtitleWidth = subtitle.length * 8;
   renderText(fb, subtitle, Math.floor((W - subtitleWidth) / 2), 100, 14);
   
-  // Controls hint (centered)
-  const controls = "W/S: MOVE  SPACE: FIRE";
-  const controlsWidth = controls.length * 8;
-  renderText(fb, controls, Math.floor((W - controlsWidth) / 2), 140, 7);
+  // Help hint (centered)
+  const helpHint = "PRESS H FOR HELP";
+  const helpWidth = helpHint.length * 8;
+  renderText(fb, helpHint, Math.floor((W - helpWidth) / 2), 140, 7);
+}
+
+export function renderPauseScreen(fb: Uint8Array) {
+  // Semi-transparent overlay (dark)
+  fillRect(fb, 0, 0, W, H, 1);
+  
+  // Pause text (centered)
+  const pause = "PAUSED";
+  const pauseWidth = pause.length * 8;
+  renderText(fb, pause, Math.floor((W - pauseWidth) / 2), 80, 9);
+  
+  // Continue hint (centered)
+  const continueText = "PRESS H TO CONTINUE";
+  const continueWidth = continueText.length * 8;
+  renderText(fb, continueText, Math.floor((W - continueWidth) / 2), 120, 7);
+}
+
+export function renderHelpScreen(fb: Uint8Array) {
+  // Dark background
+  fillRect(fb, 0, 0, W, H, 1);
+  
+  // Title (centered)
+  const title = "HELP";
+  const titleWidth = title.length * 8;
+  renderText(fb, title, Math.floor((W - titleWidth) / 2), 20, 9);
+  
+  // Controls
+  const controls = [
+    "W/S/A/D: MOVE",
+    "SPACE: FIRE",
+    "X: TOGGLE AUTOFIRE",
+    "R: RAILGUN",
+    "E: LASER",
+    "F: SAM MISSILE",
+    "T: SSM MISSILE",
+    "Q: PROMPT STRIKE",
+    "",
+    "H: HELP/PAUSE"
+  ];
+  
+  let y = 50;
+  for (const line of controls) {
+    const lineWidth = line.length * 8;
+    renderText(fb, line, Math.floor((W - lineWidth) / 2), y, 7);
+    y += 12;
+  }
+  
+  // Back hint (centered)
+  const backText = "PRESS H TO RETURN";
+  const backWidth = backText.length * 8;
+  renderText(fb, backText, Math.floor((W - backWidth) / 2), 180, 14);
 }
 
 export function renderGameOverScreen(fb: Uint8Array, score: number, bestScore: number) {

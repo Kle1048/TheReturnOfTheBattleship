@@ -1,5 +1,7 @@
-import { loadSpriteSheet } from "./sprite-loader";
+import { loadSpriteSheet, loadSprite, loadImage, extractPaletteFromImage } from "./sprite-loader";
 import { AnimatedSprite } from "../engine/render/animation";
+import { Sprite } from "../engine/render/blit";
+import { VGA_PALETTE, RGBA } from "../engine/render/constants";
 
 /**
  * Asset-Manager: Lädt und verwaltet alle Sprites und Hintergründe
@@ -11,6 +13,10 @@ export class AssetManager {
   public frigateSprite: AnimatedSprite | null = null;
   public jetSprite: AnimatedSprite | null = null;
   public droneSprite: AnimatedSprite | null = null;
+  public titleScreenSprite: Sprite | null = null;
+  public titleScreenPalette: RGBA[] | null = null;
+  public gameOverScreenSprite: Sprite | null = null;
+  public gameOverScreenPalette: RGBA[] | null = null;
 
   /**
    * Lädt alle Sprites und Hintergründe
@@ -116,6 +122,36 @@ export class AssetManager {
       console.warn("Drohne-Sprite konnte nicht geladen werden, verwende Standard-Sprite:", error);
       this.droneSprite = null;
     }
+
+    // Title Screen Hintergrund: 320x200 Pixel
+    // Extrahiere Palette aus dem Bild und verwende diese für bessere Farbqualität
+    try {
+      // Lade das Bild zuerst, um die Palette zu extrahieren
+      const imageData = await loadImage(`${baseUrl}assets/title-screen.png`);
+      this.titleScreenPalette = extractPaletteFromImage(imageData);
+      
+      // Lade das Sprite mit der extrahierten Palette
+      this.titleScreenSprite = await loadSprite(`${baseUrl}assets/title-screen.png`, this.titleScreenPalette, true);
+    } catch (error) {
+      console.warn("Title Screen Bild konnte nicht geladen werden, verwende Standard-Hintergrund:", error);
+      this.titleScreenSprite = null;
+      this.titleScreenPalette = null;
+    }
+
+    // Game Over Screen Hintergrund: 320x200 Pixel
+    // Extrahiere Palette aus dem Bild und verwende diese für bessere Farbqualität
+    try {
+      // Lade das Bild zuerst, um die Palette zu extrahieren
+      const gameOverImageData = await loadImage(`${baseUrl}assets/game-over-screen.png`);
+      this.gameOverScreenPalette = extractPaletteFromImage(gameOverImageData);
+      
+      // Lade das Sprite mit der extrahierten Palette
+      this.gameOverScreenSprite = await loadSprite(`${baseUrl}assets/game-over-screen.png`, this.gameOverScreenPalette, true);
+    } catch (error) {
+      console.warn("Game Over Screen Bild konnte nicht geladen werden, verwende Standard-Hintergrund:", error);
+      this.gameOverScreenSprite = null;
+      this.gameOverScreenPalette = null;
+    }
   }
 
   /**
@@ -167,6 +203,38 @@ export class AssetManager {
    */
   getDroneSprite(): AnimatedSprite | null {
     return this.droneSprite;
+  }
+
+  /**
+   * Gibt das Title Screen Sprite zurück
+   * @returns Title Screen Sprite oder null wenn nicht geladen
+   */
+  getTitleScreenSprite(): Sprite | null {
+    return this.titleScreenSprite;
+  }
+
+  /**
+   * Gibt die Title Screen Palette zurück
+   * @returns Title Screen Palette oder null wenn nicht geladen
+   */
+  getTitleScreenPalette(): RGBA[] | null {
+    return this.titleScreenPalette;
+  }
+
+  /**
+   * Gibt das Game Over Screen Sprite zurück
+   * @returns Game Over Screen Sprite oder null wenn nicht geladen
+   */
+  getGameOverScreenSprite(): Sprite | null {
+    return this.gameOverScreenSprite;
+  }
+
+  /**
+   * Gibt die Game Over Screen Palette zurück
+   * @returns Game Over Screen Palette oder null wenn nicht geladen
+   */
+  getGameOverScreenPalette(): RGBA[] | null {
+    return this.gameOverScreenPalette;
   }
 }
 

@@ -123,8 +123,11 @@ const loop = new GameLoop(
         audio.resume();
       }
     } else if (game.state === GameState.GAME_OVER) {
-      const inp = getInput();
-      if (inp.fire) {
+      // Im Game Over State nur auf einmaligen Fire-Input reagieren (nicht auf kontinuierliches Autofire)
+      // Verwende isKeyPressed/isMousePressed statt getInput().fire, um Autofire zu ignorieren
+      const firePressed = input.isKeyPressed("Space") || input.isMousePressed(0);
+      const mobileState = mobileControls.getState();
+      if (firePressed || mobileState.firePressed) {
         game.state = GameState.TITLE;
       }
     } else if (game.state === GameState.HELP) {

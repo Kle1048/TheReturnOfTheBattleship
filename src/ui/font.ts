@@ -88,3 +88,60 @@ function renderChar(fb: Uint8Array, char: string, x: number, y: number, color: n
     }
   }
 }
+
+/**
+ * Rendert Text in normaler Größe mit Outline für dickeren Look
+ */
+export function renderTextWithOutline(fb: Uint8Array, text: string, x: number, y: number, color: number, outlineColor: number = 1) {
+  const W = 320;
+  const H = 200;
+  
+  let posX = x;
+  
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i].toUpperCase();
+    const fontData = FONT_DATA[char];
+    if (!fontData) {
+      posX += CHAR_WIDTH;
+      continue;
+    }
+    
+    // Render mit Outline (dicker Look) in normaler Größe
+    for (let row = 0; row < 8; row++) {
+      const rowData = fontData[row];
+      for (let col = 0; col < 8; col++) {
+        const bitIndex = 7 - col;
+        const bit = (rowData >> bitIndex) & 1;
+        if (bit) {
+          // Render Outline (alle 8 Nachbarpixel)
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              if (dx === 0 && dy === 0) continue; // Skip center
+              
+              const outlineX = posX + (7 - col) + dx;
+              const outlineY = y + row + dy;
+              
+              if (outlineX >= 0 && outlineX < W && outlineY >= 0 && outlineY < H) {
+                const idx = outlineY * W + outlineX;
+                // Nur Outline setzen wenn noch nicht gesetzt oder transparent
+                if (fb[idx] === 0 || fb[idx] === outlineColor) {
+                  fb[idx] = outlineColor;
+                }
+              }
+            }
+          }
+          
+          // Render Haupt-Pixel
+          const mainX = posX + (7 - col);
+          const mainY = y + row;
+          
+          if (mainX >= 0 && mainX < W && mainY >= 0 && mainY < H) {
+            fb[mainY * W + mainX] = color;
+          }
+        }
+      }
+    }
+    
+    posX += CHAR_WIDTH;
+  }
+}

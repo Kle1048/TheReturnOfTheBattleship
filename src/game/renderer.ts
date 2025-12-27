@@ -1,6 +1,6 @@
 import { VGARenderer } from "../engine/render/renderer";
 import { blit, drawLine, fillRect } from "../engine/render/blit";
-import { W, H, SEA_Y, SEA_HEIGHT } from "../engine/render/constants";
+import { W, H, SEA_Y, SEA_HEIGHT, VGA_PALETTE } from "../engine/render/constants";
 import { Entity, EntityType } from "./entities/entity";
 import { createSkyPattern, createSeaPattern } from "../assets/sprites";
 import { renderHUD } from "../ui/hud";
@@ -16,6 +16,7 @@ export class GameRenderer {
   private seaPatternFallback: Uint8Array; // Fallback für wenn kein Sprite Sheet geladen wurde
   private skyScroll = 0;
   private seaScroll = 0;
+  private lastState: "title" | "running" | "pause" | "help" | "gameover" | null = null;
 
   constructor() {
     this.skyPattern = createSkyPattern();
@@ -57,6 +58,26 @@ export class GameRenderer {
     dt: number = 16 // Delta time für Animation
   ) {
     const fb = renderer.fb;
+    
+    // Palette-Management: Wechsle zwischen verschiedenen Paletten je nach State
+    if (state === "title" && this.lastState !== "title") {
+      // Wechsle zu Title Screen Palette
+      const titlePalette = assets.getTitleScreenPalette();
+      if (titlePalette) {
+        renderer.palette = [...titlePalette];
+      }
+    } else if (state === "gameover" && this.lastState !== "gameover") {
+      // Wechsle zu Game Over Screen Palette
+      const gameOverPalette = assets.getGameOverScreenPalette();
+      if (gameOverPalette) {
+        renderer.palette = [...gameOverPalette];
+      }
+    } else if ((state === "running" || state === "pause" || state === "help") && 
+               (this.lastState === "title" || this.lastState === "gameover")) {
+      // Wechsle zurück zu VGA Palette beim Spielstart
+      renderer.palette = [...VGA_PALETTE];
+    }
+    this.lastState = state;
     
     if (state === "title") {
       renderTitleScreen(fb);

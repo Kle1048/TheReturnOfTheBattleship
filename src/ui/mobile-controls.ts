@@ -12,6 +12,7 @@ export interface MobileControlsState {
   promptStrike: boolean;
   
   // Weapon buttons (once per press - cleared each frame)
+  firePressed: boolean;
   laserPressed: boolean;
   samPressed: boolean;
   ssmPressed: boolean;
@@ -26,6 +27,7 @@ export class MobileControls {
     fire: false,
     railgun: false,
     promptStrike: false,
+    firePressed: false,
     laserPressed: false,
     samPressed: false,
     ssmPressed: false
@@ -112,6 +114,10 @@ export class MobileControls {
       switch (id) {
         case 'fire-btn':
           this.state.fire = true;
+          // Set firePressed only on first touch (once per press)
+          if (!this.state.firePressed) {
+            this.state.firePressed = true;
+          }
           break;
         case 'railgun-btn':
           this.state.railgun = true;
@@ -167,6 +173,7 @@ export class MobileControls {
   update() {
     // Clear pressed states at end of frame (for "once per press" buttons)
     // These are cleared so they only trigger once per button press
+    this.state.firePressed = false;
     this.state.laserPressed = false;
     this.state.samPressed = false;
     this.state.ssmPressed = false;

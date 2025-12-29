@@ -17,7 +17,7 @@ export class GameRenderer {
   private skyScroll = 0;
   private seaScroll = 0;
   private seaScrollY = 0; // Y-Offset für Wasser-Scrolling
-  private waterTile: Sprite; // Wasser-Tile
+  private waterTile: Sprite = createWaterTile(false); // Wasser-Tile (initialized with fallback)
   private randomPixelTimer = 0; // Timer für zufällige Pixel-Erstellung
   private randomPixelInterval = 50; // Alle 50ms neue Pixel erstellen
   private randomPixels: Array<{ baseX: number; baseY: number; color: number; createdAt: number }> = []; // Pixel mit relativen Positionen und Timestamp
@@ -183,22 +183,22 @@ export class GameRenderer {
       blit(fb, entity.sprite, x, y);
     }
     
-    // Draw LASER marker in upper half and center of screen when target is in range
-    if (laserTarget && laserTarget.hp !== undefined && laserTarget.hp > 0) {
-      const laserText = "LASER";
-      const textWidth = laserText.length * 8; // 8 pixels per character
-      const textX = Math.floor((W - textWidth) / 2); // Center horizontally
-      const textY = 40; // Upper half (H/5 = 40)
-      renderText(fb, laserText, textX, textY, 11); // Orange color
-    }
-    
     // Draw Prompt Strike indicator in center of screen when ready
     if (weapons.canUsePromptStrike()) {
       const promptText = "Press Q for Prompt Strike";
       const textWidth = promptText.length * 8; // 8 pixels per character
       const textX = Math.floor((W - textWidth) / 2); // Center horizontally
-      const textY = 40; // Same position as LASER indicator
+      const textY = 40; // Upper half (H/5 = 40)
       renderText(fb, promptText, textX, textY, 11); // Orange color
+    }
+    
+    // Draw LASER marker in upper half and center of screen when target is in range
+    if (laserTarget && laserTarget.hp !== undefined && laserTarget.hp > 0) {
+      const laserText = "LASER";
+      const textWidth = laserText.length * 8; // 8 pixels per character
+      const textX = Math.floor((W - textWidth) / 2); // Center horizontally
+      const textY = 48; // One line below Prompt Strike (40 + 8 = 48)
+      renderText(fb, laserText, textX, textY, 11); // Orange color
     }
     
     // Draw laser beam (bright red line from player to target when firing)

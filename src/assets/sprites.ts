@@ -261,3 +261,36 @@ export function createSeaPattern(): Uint8Array {
   return pattern;
 }
 
+// Water tile: 16x8 pixel tile with dark blue and blue pattern
+// Creates two versions: one with dark blue (2) and blue (3), another with swapped colors
+export function createWaterTile(swapColors: boolean = false): Sprite {
+  const w = 16;
+  const h = 8;
+  const px = new Uint8Array(w * h);
+  
+  // Define pattern: alternating dark blue and blue
+  const darkBlue = 2; // Index 2: Dark Blue
+  const blue = 3;     // Index 3: Blue
+  
+  // Create a wave-like pattern
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const idx = y * w + x;
+      
+      // Create a simple wave pattern
+      // Use sine wave to create alternating pattern
+      const wave = Math.sin((x + y * 0.5) * 0.5) > 0;
+      
+      if (swapColors) {
+        // Swapped: where it was dark blue, use blue, and vice versa
+        px[idx] = wave ? darkBlue : blue;
+      } else {
+        // Normal: dark blue and blue pattern
+        px[idx] = wave ? blue : darkBlue;
+      }
+    }
+  }
+  
+  return { w, h, px };
+}
+

@@ -197,3 +197,6 @@ Spiele jetzt online: https://kle1048.github.io/TheReturnOfTheBattleship/
 
 Bei Problemen: Checke den Actions Tab für Fehlermeldungen!
 
+
+
+

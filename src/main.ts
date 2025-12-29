@@ -6,6 +6,7 @@ import { Game, GameState } from "./game/game";
 import { GameRenderer } from "./game/renderer";
 import { assets } from "./assets/assets";
 import { MobileControls } from "./ui/mobile-controls";
+import { SoundManager } from "./assets/sounds";
 
 const canvas = document.getElementById("screen") as HTMLCanvasElement;
 if (!canvas) throw new Error("Canvas not found");
@@ -13,7 +14,24 @@ if (!canvas) throw new Error("Canvas not found");
 const renderer = new VGARenderer(canvas);
 const input = new InputManager();
 const audio = new AudioEngine();
+const soundManager = new SoundManager(audio);
 const mobileControls = new MobileControls();
+
+// Optional: Adjust individual sound volumes to make them less/more dominant
+// Values range from 0.0 (silent) to 1.0 (full volume)
+// Example: Reduce explosion volume to make it less dominant
+// audio.setSfxTypeVolume("explosion", 0.5);
+// audio.setSfxTypeVolume("gun", 0.6);
+// Or adjust all at once:
+// audio.setSfxVolumes({
+//   gun: 0.6,
+//   explosion: 0.5,
+//   hit: 0.4,
+//   laser: 0.5,
+//   missileLaunch: 0.6,
+//   railShot: 0.7,
+//   promptStrike: 0.8
+// });
 
 // Load assets before creating game
 let game: Game;
@@ -23,10 +41,38 @@ async function init() {
   // Lade alle Sprites
   await assets.loadAll();
   
+  // Lade alle Sounds
+  const baseUrl = (import.meta as any).env?.BASE_URL || '/';
+  await soundManager.loadAll(`${baseUrl}assets/sounds/`);
+  
   // Erstelle Game mit geladenen Sprites
   const playerSprite = assets.getPlayerSprite();
   game = new Game(playerSprite);
   gameRenderer = new GameRenderer();
+  
+  // Set up SFX callbacks
+  game.setSfxCallback((event) => {
+    switch (event.type) {
+      case "gun":
+        audio.sfxGun(soundManager.getSfxUrl("sfxGun") || undefined);
+        break;
+      case "explosion":
+        audio.sfxExplosion(soundManager.getSfxUrl("sfxExplosion") || undefined);
+        break;
+      case "hit":
+        audio.sfxHit(soundManager.getSfxUrl("sfxHit") || undefined);
+        break;
+      case "laser":
+        audio.sfxLaser(soundManager.getSfxUrl("sfxLaser") || undefined);
+        break;
+      case "missileLaunch":
+        audio.sfxMissileLaunch(soundManager.getSfxUrl("sfxMissileLaunch") || undefined);
+        break;
+      case "railShot":
+        audio.sfxRailShot(soundManager.getSfxUrl("sfxRailShot") || undefined);
+        break;
+    }
+  });
 }
 
 // Warte bis Assets geladen sind, dann starte Game Loop
@@ -121,8 +167,13 @@ const loop = new GameLoop(
         const playerSprite = assets.getPlayerSprite();
         game.start(playerSprite);
         audio.resume();
+        // Start background music when game starts (background-low.wav in loop)
+        soundManager.startBackgroundMusic();
       }
     } else if (game.state === GameState.GAME_OVER) {
+      // Stop background music when game over
+      soundManager.stopBackgroundMusic();
+      
       // Im Game Over State nur auf einmaligen Fire-Input reagieren (nicht auf kontinuierliches Autofire)
       // Verwende isKeyPressed/isMousePressed statt getInput().fire, um Autofire zu ignorieren
       const firePressed = input.isKeyPressed("Space") || input.isMousePressed(0);
@@ -148,15 +199,10 @@ const loop = new GameLoop(
       
       const inp = getInput();
       
-      // Play SFX
-      if (inp.fire && game.getWeapons().canFireArtillery()) {
-        audio.sfxGun();
-      }
-      if (inp.railgun && game.getWeapons().canFireRailgun()) {
-        audio.sfxRailCharge();
-      }
+      // Play SFX (with WAV files if available, fallback to synth)
+      // Note: Artillery sound is now triggered in game.update() when bullet is actually created
       if (inp.promptStrike && game.getWeapons().canUsePromptStrike()) {
-        audio.sfxPromptStrike();
+        audio.sfxPromptStrike(soundManager.getSfxUrl("sfxPromptStrike") || undefined);
       }
       
       game.update(dt, inp);

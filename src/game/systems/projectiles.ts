@@ -154,7 +154,7 @@ export function createSAMMissile(x: number, y: number, targetId: number, ownerId
   // Initial velocity forward (will be adjusted by homing)
   missile.vx = 0.22; // Faster forward speed
   missile.vy = 0;
-  missile.damage = 30; // High damage for air targets
+  missile.damage = 15; // Reduced damage (was 30, now half)
   missile.owner = ownerId;
   missile.targetId = targetId;
   missile.hitbox = {

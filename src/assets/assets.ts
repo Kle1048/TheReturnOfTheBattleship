@@ -17,6 +17,8 @@ export class AssetManager {
   public titleScreenPalette: RGBA[] | null = null;
   public gameOverScreenSprite: Sprite | null = null;
   public gameOverScreenPalette: RGBA[] | null = null;
+  public waterTile: Sprite | null = null;
+  public waterTileSwapped: Sprite | null = null;
 
   /**
    * Lädt alle Sprites und Hintergründe
@@ -152,6 +154,42 @@ export class AssetManager {
       this.gameOverScreenSprite = null;
       this.gameOverScreenPalette = null;
     }
+
+    // Wasser-Tile: 16x8 Pixel
+    // Lade das normale Tile und erstelle eine Version mit getauschten Farben
+    try {
+      this.waterTile = await loadSprite(`${baseUrl}assets/water-tile.png`);
+      // Erstelle Version mit getauschten Farben (Dunkelblau <-> Blau)
+      this.waterTileSwapped = this.swapWaterTileColors(this.waterTile);
+    } catch (error) {
+      console.warn("Wasser-Tile konnte nicht geladen werden, verwende programmatisch erstelltes Tile:", error);
+      this.waterTile = null;
+      this.waterTileSwapped = null;
+    }
+  }
+
+  /**
+   * Tauscht die Farben in einem Wasser-Tile (Dunkelblau <-> Blau)
+   * @param tile Das ursprüngliche Tile
+   * @returns Ein neues Tile mit getauschten Farben
+   */
+  private swapWaterTileColors(tile: Sprite): Sprite {
+    const swapped = new Uint8Array(tile.px.length);
+    const darkBlue = 2; // Index 2: Dark Blue
+    const blue = 3;     // Index 3: Blue
+    
+    for (let i = 0; i < tile.px.length; i++) {
+      const color = tile.px[i];
+      if (color === darkBlue) {
+        swapped[i] = blue;
+      } else if (color === blue) {
+        swapped[i] = darkBlue;
+      } else {
+        swapped[i] = color; // Andere Farben bleiben unverändert
+      }
+    }
+    
+    return { w: tile.w, h: tile.h, px: swapped };
   }
 
   /**
@@ -235,6 +273,22 @@ export class AssetManager {
    */
   getGameOverScreenPalette(): RGBA[] | null {
     return this.gameOverScreenPalette;
+  }
+
+  /**
+   * Gibt das Wasser-Tile zurück
+   * @returns Wasser-Tile oder null wenn nicht geladen
+   */
+  getWaterTile(): Sprite | null {
+    return this.waterTile;
+  }
+
+  /**
+   * Gibt das Wasser-Tile mit getauschten Farben zurück
+   * @returns Wasser-Tile mit getauschten Farben oder null wenn nicht geladen
+   */
+  getWaterTileSwapped(): Sprite | null {
+    return this.waterTileSwapped;
   }
 }
 

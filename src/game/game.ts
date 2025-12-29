@@ -17,6 +17,14 @@ export enum GameState {
   GAME_OVER
 }
 
+export type SfxEvent = 
+  | { type: "explosion" }
+  | { type: "hit" }
+  | { type: "laser" }
+  | { type: "missileLaunch" }
+  | { type: "railShot" }
+  | { type: "gun" };
+
 export class Game {
   public state = GameState.TITLE;
   public score = 0;
@@ -41,6 +49,19 @@ export class Game {
   public laserTarget: Entity | null = null;
   private laserBeamTarget: { x: number; y: number } | null = null;
   private samTarget: Entity | null = null;
+  
+  // SFX callback (optional)
+  private sfxCallback?: (event: SfxEvent) => void;
+  
+  setSfxCallback(callback: (event: SfxEvent) => void) {
+    this.sfxCallback = callback;
+  }
+  
+  private triggerSfx(event: SfxEvent) {
+    if (this.sfxCallback) {
+      this.sfxCallback(event);
+    }
+  }
 
   constructor(playerSprite: AnimatedSprite) {
     this.player = new Player(playerSprite);
@@ -213,6 +234,8 @@ export class Game {
       this.entities.push(bullet);
       // Set cooldown after firing
       this.weapons.fireArtillery(this.player.entity.x, this.player.entity.y);
+      // Trigger gun sound when bullet is actually created
+      this.triggerSfx({ type: "gun" });
     }
     
     if (input.railgun && this.weapons.canFireRailgun()) {
@@ -225,6 +248,7 @@ export class Game {
         );
         this.entities.push(beam);
         this.screenShake(200);
+        this.triggerSfx({ type: "railShot" });
       }
     }
     
@@ -247,6 +271,7 @@ export class Game {
     if (input.laser && this.weapons.canFireLaser() && this.laserTarget) {
       // Fire the laser
       this.weapons.fireLaser();
+      this.triggerSfx({ type: "laser" });
       
       // Store target position for beam rendering
       this.laserBeamTarget = { x: this.laserTarget.x, y: this.laserTarget.y };
@@ -256,7 +281,7 @@ export class Game {
       if (this.laserTarget.hp !== undefined) {
         this.laserTarget.hp -= damage;
         if (this.laserTarget.hp <= 0) {
-          // Target destroyed - create explosion
+          // Target destroyed - create explosion (visual only, no sound)
           const exp: Entity = {
             id: 999998,
             type: EntityType.EXPLOSION,
@@ -271,6 +296,9 @@ export class Game {
           this.explosions.push(exp);
           this.score += 10;
           this.weapons.addPower(5); // Same as other kills
+          // No explosion sound for laser kills - only laser sound
+        } else {
+          this.triggerSfx({ type: "hit" });
         }
       }
     }
@@ -290,6 +318,7 @@ export class Game {
       );
       this.entities.push(missile);
       this.weapons.fireAA(this.player.entity.x, this.player.entity.y);
+      this.triggerSfx({ type: "missileLaunch" });
     }
     
     // Handle SSM fire (auto-targets nearest ship within 30° cone to the right)
@@ -306,6 +335,7 @@ export class Game {
       );
       this.entities.push(missile);
       this.weapons.fireSSM(this.player.entity.x, this.player.entity.y);
+      this.triggerSfx({ type: "missileLaunch" });
     }
     
     if (input.promptStrike && this.weapons.canUsePromptStrike()) {
@@ -538,6 +568,7 @@ export class Game {
             maxLifetime: 200
           };
           this.explosions.push(exp);
+          this.triggerSfx({ type: "explosion" });
         } else if (hit.entity2.type === EntityType.ENEMY_DRONE ||
                    hit.entity2.type === EntityType.ENEMY_JET ||
                    hit.entity2.type === EntityType.ENEMY_BOAT ||
@@ -561,6 +592,7 @@ export class Game {
             maxLifetime: 300
           };
           this.explosions.push(expRamHit);
+          this.triggerSfx({ type: "explosion" });
         }
       } else if (hit.entity1.type === EntityType.ENEMY_DRONE ||
                  hit.entity1.type === EntityType.ENEMY_JET ||
@@ -595,6 +627,9 @@ export class Game {
               maxLifetime: 300
             };
             this.explosions.push(exp);
+            this.triggerSfx({ type: "explosion" });
+          } else {
+            this.triggerSfx({ type: "hit" });
           }
           // Remove bullets and missiles (but not railgun beams - they pierce through)
           if (hit.entity2.type === EntityType.BULLET || 

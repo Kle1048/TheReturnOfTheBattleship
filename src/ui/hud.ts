@@ -31,18 +31,21 @@ export function renderHUD(
   drawLine(fb, hpBarX, hpBarY, hpBarX, hpBarY + hpBarH, 9);
   drawLine(fb, hpBarX + hpBarW, hpBarY, hpBarX + hpBarW, hpBarY + hpBarH, 9);
   
-  // Power Meter (bottom left, above HP)
-  const powerBarX = 4;
-  const powerBarY = H - 32;
-  const powerBarW = 100;
-  const powerBarH = 8;
+  // Prompt Strike Bar (bottom right, same height as HP bar, but shorter)
+  const promptBarW = 60; // Shorter than HP bar
+  const promptBarX = W - promptBarW - 4;
+  const promptBarY = H - 20; // Same height as HP bar
+  const promptBarH = 8;
   
-  fillRect(fb, powerBarX, powerBarY, powerBarW, powerBarH, 6);
-  fillRect(fb, powerBarX + 1, powerBarY + 1, (powerBarW - 2) * (powerMeter / 100), powerBarH - 2, 15);
-  drawLine(fb, powerBarX, powerBarY, powerBarX + powerBarW, powerBarY, 9);
-  drawLine(fb, powerBarX, powerBarY + powerBarH, powerBarX + powerBarW, powerBarY + powerBarH, 9);
-  drawLine(fb, powerBarX, powerBarY, powerBarX, powerBarY + powerBarH, 9);
-  drawLine(fb, powerBarX + powerBarW, powerBarY, powerBarX + powerBarW, powerBarY + powerBarH, 9);
+  // Background
+  fillRect(fb, promptBarX, promptBarY, promptBarW, promptBarH, 6);
+  // Power fill
+  fillRect(fb, promptBarX + 1, promptBarY + 1, (promptBarW - 2) * (powerMeter / 100), promptBarH - 2, 15);
+  // Outline
+  drawLine(fb, promptBarX, promptBarY, promptBarX + promptBarW, promptBarY, 9);
+  drawLine(fb, promptBarX, promptBarY + promptBarH, promptBarX + promptBarW, promptBarY + promptBarH, 9);
+  drawLine(fb, promptBarX, promptBarY, promptBarX, promptBarY + promptBarH, 9);
+  drawLine(fb, promptBarX + promptBarW, promptBarY, promptBarX + promptBarW, promptBarY + promptBarH, 9);
   
   // Score (top right)
   const scoreText = `SCORE: ${Math.floor(score).toString().padStart(8, '0')}`;
@@ -53,19 +56,6 @@ export function renderHUD(
   const heatText = `HEAT: ${Math.floor(heat).toString().padStart(3, '0')}`;
   const heatWidth = heatText.length * 8;
   renderText(fb, heatText, W - heatWidth - 4, 14, 11);
-  
-  // Laser heat indicator (if active/overheated)
-  if (laserHeat > 0) {
-    const laserBarX = 4;
-    const laserBarY = H - 44;
-    const laserBarW = 60;
-    const laserBarH = 6;
-    
-    fillRect(fb, laserBarX, laserBarY, laserBarW, laserBarH, 6);
-    fillRect(fb, laserBarX + 1, laserBarY + 1, (laserBarW - 2) * laserHeat, laserBarH - 2, laserHeat > 0.9 ? 12 : 14);
-    drawLine(fb, laserBarX, laserBarY, laserBarX + laserBarW, laserBarY, 9);
-    drawLine(fb, laserBarX, laserBarY + laserBarH, laserBarX + laserBarW, laserBarY + laserBarH, 9);
-  }
   
 }
 

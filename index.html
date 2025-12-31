@@ -73,13 +73,13 @@
     #button-zone {
       position: absolute;
       right: 0;
-      bottom: 0;
-      width: 200px; /* 3 columns * button width + gaps */
-      height: 140px; /* 2 rows * button height + gaps */
+      bottom: 60px; /* Weiter nach oben verschoben */
+      width: 240px; /* 3 columns * button width + gaps (angepasst für größere Buttons) */
+      height: 170px; /* 2 rows * button height + gaps (angepasst für größere Buttons) */
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       grid-template-rows: repeat(2, 1fr);
-      gap: 8px;
+      gap: 10px;
       padding: 20px;
       pointer-events: all;
       align-items: end;
@@ -87,13 +87,13 @@
     }
     
     .weapon-button {
-      width: 50px;
-      height: 50px;
+      width: 60px;
+      height: 60px;
       border-radius: 4px; /* Leicht abgerundete Ecken statt vollständig rund */
       border: 3px solid rgba(255, 255, 255, 0.8);
       background: rgba(0, 0, 0, 0.6);
       color: white;
-      font-size: 9px;
+      font-size: 10px;
       font-family: monospace;
       font-weight: bold;
       text-align: center;

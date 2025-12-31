@@ -13,6 +13,7 @@ export interface MobileControlsState {
   
   // Weapon buttons (once per press - cleared each frame)
   firePressed: boolean;
+  autofireTogglePressed: boolean; // Auto-Fire toggle trigger (wie X-Taste) - einmal pro Druck
   laserPressed: boolean;
   samPressed: boolean;
   ssmPressed: boolean;
@@ -28,6 +29,7 @@ export class MobileControls {
     railgun: false,
     promptStrike: false,
     firePressed: false,
+    autofireTogglePressed: false,
     laserPressed: false,
     samPressed: false,
     ssmPressed: false
@@ -44,11 +46,13 @@ export class MobileControls {
     const joystickZone = document.getElementById('joystick-zone');
     if (!joystickZone) return;
 
-    // Static joystick, links vertikal in der Mitte
+    // Static joystick, links unten - positioniert so dass er vollständig sichtbar ist
+    // top: 80% bedeutet ~20% vom unteren Rand, was bei 100vh etwa 200px entspricht
+    // left: 80px für genügend Abstand vom linken Rand (60px Radius + 20px Padding)
     this.joystick = nipplejs.create({
       zone: joystickZone,
       mode: 'static',
-      position: { left: '15%', top: '50%' },
+      position: { left: '80px', top: '80%' },
       color: 'rgba(255, 255, 255, 0.5)',
       size: 120,
       threshold: 0.1,
@@ -114,9 +118,10 @@ export class MobileControls {
       switch (id) {
         case 'fire-btn':
           this.state.fire = true;
-          // Set firePressed only on first touch (once per press)
+          // Toggle Auto-Fire (wie X-Taste) - nur beim ersten Touch
           if (!this.state.firePressed) {
             this.state.firePressed = true;
+            this.state.autofireTogglePressed = true;
           }
           break;
         case 'railgun-btn':
@@ -174,6 +179,7 @@ export class MobileControls {
     // Clear pressed states at end of frame (for "once per press" buttons)
     // These are cleared so they only trigger once per button press
     this.state.firePressed = false;
+    this.state.autofireTogglePressed = false;
     this.state.laserPressed = false;
     this.state.samPressed = false;
     this.state.ssmPressed = false;

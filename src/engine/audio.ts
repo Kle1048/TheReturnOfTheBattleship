@@ -41,6 +41,8 @@ export class AudioEngine {
   // Background music system
   private currentMusicSource: AudioBufferSourceNode | null = null;
   private currentMusicGain: GainNode | null = null;
+  private currentMusicLevel: "low" | "medium" | "high" | null = null;
+  private musicFadeTime = 0.5; // Crossfade duration in seconds
   private musicVolume = 0.6;
 
   private initContext() {
@@ -196,30 +198,68 @@ export class AudioEngine {
   }
 
   /**
-   * Start background music (plays background-low.wav in loop)
+   * Update background music based on heat level
+   * Heat ranges: 0-50 (low), 50-100 (medium), 100+ (high)
    */
-  startBackgroundMusic(musicBuffer: AudioBuffer | null): void {
+  updateBackgroundMusic(heat: number, lowMusic: AudioBuffer | null, mediumMusic: AudioBuffer | null, highMusic: AudioBuffer | null): void {
     this.initContext();
     if (!this.ctx || !this.musicBus) return;
     
-    // If already playing, do nothing
-    if (this.currentMusicSource) return;
+    let targetLevel: "low" | "medium" | "high";
+    let targetBuffer: AudioBuffer | null;
     
-    // If no buffer available, do nothing
-    if (!musicBuffer) return;
+    if (heat < 50) {
+      targetLevel = "low";
+      targetBuffer = lowMusic;
+    } else if (heat < 100) {
+      targetLevel = "medium";
+      targetBuffer = mediumMusic;
+    } else {
+      targetLevel = "high";
+      targetBuffer = highMusic;
+    }
     
-    // Create gain node for music
-    const gain = this.ctx.createGain();
-    gain.gain.value = this.musicVolume;
-    gain.connect(this.musicBus);
+    // If already playing the correct level, do nothing
+    if (this.currentMusicLevel === targetLevel) return;
     
-    // Start music in loop
-    const source = this.playSoundLoop(musicBuffer, gain);
-    if (!source) return;
+    // If no buffer available for target level, keep current or use fallback
+    if (!targetBuffer) {
+      // Try to use a fallback
+      if (targetLevel === "medium" && lowMusic) targetBuffer = lowMusic;
+      else if (targetLevel === "high" && mediumMusic) targetBuffer = mediumMusic;
+      else if (!targetBuffer) return; // No music available
+    }
+    
+    // Crossfade to new music
+    const now = this.ctx.currentTime;
+    const fadeTime = this.musicFadeTime;
+    
+    // Create gain node for new music
+    const nextGain = this.ctx.createGain();
+    nextGain.gain.value = 0;
+    nextGain.connect(this.musicBus);
+    
+    // Start new music
+    const nextSource = this.playSoundLoop(targetBuffer, nextGain);
+    if (!nextSource) return;
+    
+    // Fade in new music
+    nextGain.gain.setValueAtTime(0, now);
+    nextGain.gain.linearRampToValueAtTime(this.musicVolume, now + fadeTime);
+    
+    // Fade out current music
+    if (this.currentMusicGain && this.currentMusicSource) {
+      this.currentMusicGain.gain.setValueAtTime(this.currentMusicGain.gain.value, now);
+      this.currentMusicGain.gain.linearRampToValueAtTime(0, now + fadeTime);
+      
+      // Stop old source after fade
+      this.currentMusicSource.stop(now + fadeTime);
+    }
     
     // Update references
-    this.currentMusicSource = source;
-    this.currentMusicGain = gain;
+    this.currentMusicSource = nextSource;
+    this.currentMusicGain = nextGain;
+    this.currentMusicLevel = targetLevel;
   }
 
   /**
@@ -238,6 +278,7 @@ export class AudioEngine {
       this.currentMusicGain.disconnect();
       this.currentMusicGain = null;
     }
+    this.currentMusicLevel = null;
   }
 
   // Simple synth SFX (no samples needed for MVP)

@@ -92,10 +92,15 @@ export class SoundManager {
   }
 
   /**
-   * Startet die Hintergrundmusik (background-low.wav im Loop)
+   * Aktualisiert die Hintergrundmusik basierend auf Heat
    */
-  startBackgroundMusic(): void {
-    this.audioEngine.startBackgroundMusic(this.backgroundLow);
+  updateBackgroundMusic(heat: number): void {
+    this.audioEngine.updateBackgroundMusic(
+      heat,
+      this.backgroundLow,
+      this.backgroundMedium,
+      this.backgroundHigh
+    );
   }
 
   /**

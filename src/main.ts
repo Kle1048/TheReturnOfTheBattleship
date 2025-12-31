@@ -167,8 +167,8 @@ const loop = new GameLoop(
         const playerSprite = assets.getPlayerSprite();
         game.start(playerSprite);
         audio.resume();
-        // Start background music when game starts (background-low.wav in loop)
-        soundManager.startBackgroundMusic();
+        // Start background music when game starts (based on heat)
+        soundManager.updateBackgroundMusic(game.getDirector().heat);
       }
     } else if (game.state === GameState.GAME_OVER) {
       // Stop background music when game over
@@ -197,7 +197,16 @@ const loop = new GameLoop(
         autofireEnabled = !autofireEnabled;
       }
       
+      // Toggle Autofire mit Mobile Fire-Button (wie X-Taste)
+      const mobileState = mobileControls.getState();
+      if (mobileState.autofireTogglePressed) {
+        autofireEnabled = !autofireEnabled;
+      }
+      
       const inp = getInput();
+      
+      // Update background music based on heat
+      soundManager.updateBackgroundMusic(game.getDirector().heat);
       
       // Play SFX (with WAV files if available, fallback to synth)
       // Note: Artillery sound is now triggered in game.update() when bullet is actually created

@@ -255,17 +255,9 @@ export class Game {
     // Find laser target (nearest enemy within 60 pixels)
     this.laserTarget = this.findLaserTarget();
     
-    // Find SAM target (air targets only, must lock before firing)
-    // Only update target if no SAM missiles are currently in flight
-    const samMissilesInFlight = this.entities.some(e => 
-      e.type === EntityType.SAM_MISSILE && 
-      e.hp !== undefined && e.hp > 0
-    );
-    
-    if (!samMissilesInFlight) {
-      this.samTarget = this.findSAMTarget();
-    }
-    // If SAM missiles are in flight, keep the current target locked
+    // Find SAM target (air targets only) - always update to nearest target
+    // The target is used for visualization, but missiles keep their target from launch time
+    this.samTarget = this.findSAMTarget();
     
     // Handle laser fire (once per key press)
     if (input.laser && this.weapons.canFireLaser() && this.laserTarget) {
@@ -555,6 +547,9 @@ export class Game {
           this.director.reduceHeat(5);
           hit.entity2.hp = -1;
           
+          // Screen shake on hit
+          this.screenShake(150);
+          
           // Create explosion
           const exp: Entity = {
             id: 999998,
@@ -578,6 +573,9 @@ export class Game {
           const damage = hit.entity2.type === EntityType.ENEMY_ASM ? 40 : 20;
           this.player.takeDamage(damage);
           hit.entity2.hp = -1;
+          
+          // Screen shake on ramming hit (stronger for ramming)
+          this.screenShake(200);
           
           // Create explosion
           const expRamHit: Entity = {

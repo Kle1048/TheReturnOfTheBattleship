@@ -183,6 +183,41 @@ export class GameRenderer {
       blit(fb, entity.sprite, x, y);
     }
     
+    // Draw target markers (after entities so they appear on top)
+    // Laser target: Cross over the target
+    if (laserTarget && laserTarget.hp !== undefined && laserTarget.hp > 0) {
+      const targetX = Math.floor(laserTarget.x + shakeX);
+      const targetY = Math.floor(laserTarget.y + shakeY);
+      const crossSize = 8; // Size of cross arms
+      const crossColor = 11; // Orange color
+      
+      // Draw horizontal line
+      drawLine(fb, targetX - crossSize, targetY, targetX + crossSize, targetY, crossColor);
+      // Draw vertical line
+      drawLine(fb, targetX, targetY - crossSize, targetX, targetY + crossSize, crossColor);
+    }
+    
+    // SAM target: Rectangle frame around the target
+    if (samTarget && samTarget.hp !== undefined && samTarget.hp > 0) {
+      const targetX = Math.floor(samTarget.x + shakeX);
+      const targetY = Math.floor(samTarget.y + shakeY);
+      const spriteW = samTarget.sprite.w;
+      const spriteH = samTarget.sprite.h;
+      const padding = 2; // Padding around sprite
+      const frameColor = 14; // Yellow color
+      
+      const left = targetX - spriteW / 2 - padding;
+      const right = targetX + spriteW / 2 + padding;
+      const top = targetY - spriteH / 2 - padding;
+      const bottom = targetY + spriteH / 2 + padding;
+      
+      // Draw rectangle frame (4 lines)
+      drawLine(fb, left, top, right, top, frameColor); // Top
+      drawLine(fb, left, bottom, right, bottom, frameColor); // Bottom
+      drawLine(fb, left, top, left, bottom, frameColor); // Left
+      drawLine(fb, right, top, right, bottom, frameColor); // Right
+    }
+    
     // Draw Prompt Strike indicator in center of screen when ready
     if (weapons.canUsePromptStrike()) {
       const promptText = "Press Q for Prompt Strike";

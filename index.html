@@ -2,7 +2,11 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#000000">
   <title>Return of the Battleship</title>
   <style>
     * {
@@ -185,7 +189,7 @@
   </div>
   
   <script>
-    // Zeige Mobile Controls wenn Touch verfügbar ist
+    // Zeige Mobile Controls wenn Touch verfügbar ist und verstecke Browser-UI
     (function() {
       const isTouchDevice = 'ontouchstart' in window || 
                            navigator.maxTouchPoints > 0 || 
@@ -196,6 +200,32 @@
         if (mobileControls) {
           mobileControls.classList.add('visible');
         }
+        
+        // Versuche Browser-UI zu minimieren (funktioniert in vielen modernen Browsern)
+        window.addEventListener('load', function() {
+          // Scroll kurz nach unten und dann zurück, um UI zu minimieren
+          setTimeout(function() {
+            window.scrollTo(0, 1);
+            setTimeout(function() {
+              window.scrollTo(0, 0);
+            }, 10);
+          }, 100);
+          
+          // Verhindere Zoom bei Doppel-Tap
+          let lastTouchEnd = 0;
+          document.addEventListener('touchend', function(event) {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+              event.preventDefault();
+            }
+            lastTouchEnd = now;
+          }, false);
+        });
+        
+        // Verhindere Kontextmenü (langes Drücken)
+        document.addEventListener('contextmenu', function(e) {
+          e.preventDefault();
+        });
       }
     })();
   </script>

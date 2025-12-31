@@ -14,9 +14,9 @@ export function renderHUD(
 ) {
   const fb = renderer.fb;
   
-  // HP Bar (bottom left)
+  // HP Bar (top left, first row)
   const hpBarX = 4;
-  const hpBarY = H - 20;
+  const hpBarY = 4;
   const hpBarW = 80;
   const hpBarH = 8;
   
@@ -31,10 +31,10 @@ export function renderHUD(
   drawLine(fb, hpBarX, hpBarY, hpBarX, hpBarY + hpBarH, 9);
   drawLine(fb, hpBarX + hpBarW, hpBarY, hpBarX + hpBarW, hpBarY + hpBarH, 9);
   
-  // Prompt Strike Bar (bottom right, same height as HP bar, but shorter)
+  // Prompt Strike Bar (top left, second row below HP bar)
   const promptBarW = 60; // Shorter than HP bar
-  const promptBarX = W - promptBarW - 4;
-  const promptBarY = H - 20; // Same height as HP bar
+  const promptBarX = 4; // Same X as HP bar (left aligned)
+  const promptBarY = hpBarY + hpBarH + 4; // Below HP bar with 4px spacing
   const promptBarH = 8;
   
   // Background
